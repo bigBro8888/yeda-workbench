@@ -76,7 +76,8 @@ function iaComposer(chat){
 function iaPage(){
  const turns=iaTurns(),last=turns.at(-1);
  const header='<header class="iaHeader"><div>'+iaMark()+'<h1>投资业务智能体</h1></div><nav>'+cmd("iaWorkspaceRail",ico("menu")+"工作空间","iaToolBtn iwMobileOnly")+'</nav></header>';
- const welcome='<section class="iaWelcome">'+iaMark()+'<h2>今天想了解哪项投资业务？</h2><p>查投后事项、看资金缺口，或生成一份 LP 报表。</p>'+iaComposer(false)+'<div class="iaExamples">'+iaExamples.map(([id,q])=>cmd("iaPreset",ico(iaTools[id].icon)+'<span>'+q+'</span><b aria-hidden="true">↗</b>',"iaExample",id)).join("")+'</div></section>';
+ const draftProject=!iaThread&&iwProject(iwDraftProject);
+ const welcome='<section class="iaWelcome">'+iaMark()+'<h2>'+(draftProject?"在「"+esc(draftProject.name)+"」中新建对话":"今天想了解哪项投资业务？")+'</h2><p>'+(draftProject?"发送第一条消息后，可从该项目继续这段对话。":"查投后事项、看资金缺口，或生成一份 LP 报表。")+'</p>'+iaComposer(false)+'<div class="iaExamples">'+iaExamples.map(([id,q])=>cmd("iaPreset",ico(iaTools[id].icon)+'<span>'+q+'</span><b aria-hidden="true">↗</b>',"iaExample",id)).join("")+'</div></section>';
  const suggested=last?(last.plan.includes("cash")?"哪些支出形成了资金缺口？":last.plan.includes("post")?"只看逾期报送":"查看这份报表的依据"):"";
  const pending=iaPending?'<section class="iaTurn"><p class="iaQuestion">'+esc(iaPending.question)+'</p><div class="iaAgentLabel">'+iaMark()+'<strong>投资业务智能体</strong></div><p class="iaWorking" role="status">'+esc(iaPending.status)+'</p></section>':"";
  const footer=iaPending?cmd("iaCancel","取消本轮","iaNext"):cmd("iaNext",esc(suggested)+" ↗","iaNext",suggested)+iaComposer(true);

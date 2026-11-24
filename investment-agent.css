@@ -38,3 +38,25 @@
 .iwNote{white-space:pre-wrap;overflow-wrap:anywhere;line-height:1.7}
 .iaHeader .iwMobileOnly{display:none}
 @media(max-width:950px){.iwRail{display:none}.iaHeader .iwMobileOnly{display:inline-flex}.iwContext{padding:4px 12px}.drawer .iwRailInner{padding:2px 0}}
+.iwSplit{position:relative}
+.iwPane{position:absolute;z-index:5;inset-inline-start:calc(clamp(200px,16vw,248px) + 6px);width:min(350px,calc(100% - clamp(200px,16vw,248px) - 20px));max-height:calc(100% - 16px);display:flex;flex-direction:column;overflow:hidden;background:#fff;border:1px solid #c6d8ce;border-radius:12px;box-shadow:0 10px 34px #1d423525;color:#203e34}
+.iwPaneHead{position:relative;padding:15px 46px 10px 18px;flex:none}
+.iwPaneHead small{display:block;color:#62786c;font-size:12px;margin-bottom:3px}
+.iwPaneHead h2{margin:0;font-size:19px;line-height:1.4;overflow-wrap:anywhere}
+.iwPaneHead h2:focus{outline:none}
+.iwDismiss{position:absolute;right:10px;top:10px;width:30px;height:30px;border:0;background:transparent;color:#576f64;border-radius:6px}
+.iwPane .icon{width:17px;height:17px;flex:none}
+.iwBack{display:block;border:0;background:transparent;color:#486c5e;padding:3px 0 8px;font-size:12px}
+.iwPaneBody{overflow:auto;overscroll-behavior:contain;padding:4px 16px 14px;min-height:0}
+.iwStart,.iwCommand{display:flex;align-items:center;gap:10px;text-align:left;width:100%;border:0;font-size:14px;border-radius:6px}
+.iwStart{padding:12px 14px;background:#185d4e;color:#fff;font-weight:650}
+.iwStart:hover{background:#104c3e}
+.iwProjectHistory{padding:0 2px 12px;border-bottom:1px solid #dce6df}
+.iwProjectHistory h3{color:#334e42}.iwProjectHistory h3 small{font-size:12px;font-weight:400;margin-left:4px;color:#5a7064}
+.iwEmpty{font-size:13px;line-height:1.5;color:#637569;margin:0}
+.iwCommandList{padding-top:6px}.iwCommand{padding:9px 6px;background:transparent;color:#375747}.iwCommand span{flex:1}.iwCommand b{font-size:18px;font-weight:400;color:#7b9083}
+.iwCommand:hover,.iwDismiss:hover{background:#eef4ef}
+.iwRail [aria-expanded=true]{background:#dcebe1;color:#194e3e;box-shadow:inset 3px 0 #29745e}
+.iwPane .iwRailInner{padding:0}
+@media(max-width:950px){.iwPane{inset-inline-start:8px;top:8px!important;width:min(370px,calc(100% - 16px))}}
+.iwProjectThreads{max-height:170px;overflow:auto;overscroll-behavior:contain;scrollbar-width:thin}

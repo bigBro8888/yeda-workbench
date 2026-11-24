@@ -1,0 +1,15 @@
+.ddWork{max-width:1550px;margin:auto}.ddProjectSelect{display:grid;gap:4px;color:#536a7d;font-size:12px}
+.ddProjectSelect select{min-width:205px}.ddBanner{display:flex;justify-content:space-between;align-items:center;padding:20px clamp(20px,3vw,38px);background:#153853;color:white;border-left:5px solid #48a59b;border-radius:8px}
+.ddBanner small,.ddBanner span{font-size:13px;color:#d6e5ed}.ddBanner h2{font-size:26px;margin:5px 0}.ddContext{text-align:right;display:grid;gap:9px}.ddContext b{font-size:14px;color:#a5dbce}.ddContext button{color:white}
+.ddTabs{margin-top:10px}.ddGrid{display:grid;grid-template-columns:1fr 1fr;gap:16px;align-items:start}.ddPanel{margin:0 0 16px;min-width:0}.ddPad{padding:0 20px 18px}.ddHint,.ddSourceLinks,.ddStatus{font-size:12px;line-height:1.65;color:#52677b}
+.ddPad form{display:grid;grid-template-columns:minmax(0,1.5fr) minmax(0,1fr);column-gap:12px;align-items:end;margin:0}.ddPad form label{display:grid;gap:5px;margin:0 0 6px;color:#3c5368;font-size:13px}
+.ddWork input,.ddWork select{width:100%;min-width:0;font:inherit;border:1px solid #c8d6e0;border-radius:5px;background:white;padding:8px 10px;color:#18334a}
+.ddPad form .actions{grid-column:1/-1;justify-content:flex-start;margin:4px 0}.ddPad .error{grid-column:1/-1;margin:4px 0;line-height:1.5}.ddPad .error:empty{display:none}
+.ddPublic form{grid-template-columns:repeat(3,minmax(0,1fr)) auto}.ddPublic form .actions{grid-column:4;grid-row:1;align-self:end;margin:0 0 6px}.ddPublic form .error{grid-row:2}
+.ddSourceLinks{display:flex;align-items:center;flex-wrap:wrap;gap:8px 16px;border-top:1px solid #e1e9ef;padding-top:11px;margin-top:10px}
+.ddLink{color:#17659c;font-weight:600;text-decoration:none;font-size:13px}.ddLink:hover,.ddLink:focus{text-decoration:underline}
+.ddEmpty{padding:20px;color:#516a7e;font-size:13px;line-height:1.7}.ddStatus{font-size:12px}.ddPanel .panelhead{gap:10px;flex-wrap:wrap}.ddPanel .tablewrap{max-width:100%}
+.ddPeerScroll{max-height:290px;overflow:auto}.ddIntake,.ddVersion{padding:12px 0;border-bottom:1px solid #dfebef}.ddIntake small,.ddVersion small{display:block;color:#5b6f80;margin:6px 0}
+#ddStatus:not(:empty){background:#fff6df;padding:10px 14px;margin-bottom:12px;color:#814b10;font-size:13px}#ddHits h3 small{font-size:13px;color:#5b7187}#ddHits form{display:flex;flex-wrap:wrap;align-items:end;gap:10px;margin-top:14px}#ddHits form label{min-width:180px}#ddHits .error:not(:empty){order:3;width:100%}
+@media(max-width:850px){.ddGrid{grid-template-columns:1fr}.ddPublic form{grid-template-columns:1fr 1fr}.ddPublic form .actions{grid-column:auto;grid-row:auto}.ddPublic form .error{grid-row:auto}.ddProjectSelect select{min-width:0}.ddContext{max-width:40%}}
+@media(max-width:550px){.ddPad{padding:0 12px 12px}.ddWork .heading{align-items:stretch;flex-direction:column;gap:8px}.ddGrid{gap:0}.ddPad form,.ddPublic form{display:flex;flex-direction:column;align-items:stretch}.ddPublic form .actions{align-self:start}.ddBanner{padding:16px}.ddTabs{gap:12px}.ddPanel table{min-width:460px}}

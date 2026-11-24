@@ -88,7 +88,7 @@ function iwSidebar(){
  iwLine("iaWorkspaceDocs","","file","我的资料")+ '<div class="iwSection"><strong>项目空间</strong><button data-act="iaWorkspaceProjectEdit" aria-label="新建项目空间" title="新建项目空间">＋</button></div>'+
  groups.map(g=>'<div class="iwGroupName">'+esc(g)+'</div>'+iw.projects.filter(p=>p.group===g).map(p=>iwLine("iaWorkspaceProject",p.id,"project",p.name,String(ts.filter(t=>t.project===p.id).length),p.id===pid)).join("")).join("")+
  '<div class="iwSection"><strong>'+(ts.length?"最近对话":"对话示例")+'</strong></div>'+
- (ts.length?ts.slice(0,8).map(t=>iwLine("iaResume",t.key,"file",t.name,"",t.key===iaThread)).join(""):iaExamples.map(([k,q])=>iwLine("iaWorkspaceExample",k,iaTools[k].icon,q)).join(""))+'</div>';
+ (ts.length?ts.slice(0,8).map(t=>iwLine("iaResume",t.key,"file",t.name,"",t.key===iaThread)).join(""):iaExamples.map(([k])=>iwLine("iaWorkspaceExample",k,iaTools[k].icon,iaExampleQuestion(k))).join(""))+'</div>';
 }
 function iwLayout(header,content){
  const y=$(".iwRail")?.scrollTop||0;

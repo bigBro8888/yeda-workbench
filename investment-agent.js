@@ -1,5 +1,6 @@
 "use strict";
 const iaTools = {
+ financials:{title:"企业财报统计",icon:"file",prompt:"按企业和报告年度核对财报指标与来源"},
  post:{title:"投后巡检",icon:"shield",prompt:"检查投后报送、经营指标和待跟进事项"},
  cash:{title:"资金排期",icon:"coin",prompt:"汇总基金可用现金和未来90天资金缺口"},
  lp:{title:"LP 报表",icon:"chart",prompt:"编制 LP 实缴、分配和回报统计报表"}
@@ -52,10 +53,15 @@ function iaRules(q){
  return tasks;
 }
 const iaExamples=[
+ ["financials","统计今年公司财报"],
  ["post","哪些投后事项需要我跟进？"],
  ["cash","产业基金一期未来 90 天有资金缺口吗？"],
  ["lp","帮我整理甲出资人的实缴和分配情况。"]
 ];
+function iaExampleQuestion(id){
+ if(id==="financials"&&!iwProject(iwCurrentProject())?.record)return "统计海岚智造今年的财报";
+ return iaExamples.find(x=>x[0]===id)?.[1]||"";
+}
 let iaThread=sessionStorage.getItem("yeda.agent.thread")||"";
 let iaPending=null;
 const iaThreadKey=r=>r.thread||r.id;
@@ -77,7 +83,7 @@ function iaPage(){
  const turns=iaTurns(),last=turns.at(-1);
  const header='<header class="iaHeader"><div>'+iaMark()+'<h1>投资业务智能体</h1></div><nav>'+cmd("iaWorkspaceRail",ico("menu")+"工作空间","iaToolBtn iwMobileOnly")+'</nav></header>';
  const draftProject=!iaThread&&iwProject(iwDraftProject);
- const welcome='<section class="iaWelcome">'+iaMark()+'<h2>'+(draftProject?"在「"+esc(draftProject.name)+"」中新建对话":"今天想了解哪项投资业务？")+'</h2><p>'+(draftProject?"发送第一条消息后，可从该项目继续这段对话。":"查投后事项、看资金缺口，或生成一份 LP 报表。")+'</p>'+iaComposer(false)+'<div class="iaExamples">'+iaExamples.map(([id,q])=>cmd("iaPreset",ico(iaTools[id].icon)+'<span>'+q+'</span><b aria-hidden="true">↗</b>',"iaExample",id)).join("")+'</div></section>';
+ const welcome='<section class="iaWelcome">'+iaMark()+'<h2>'+(draftProject?"在「"+esc(draftProject.name)+"」中新建对话":"今天想了解哪项投资业务？")+'</h2><p>'+(draftProject?"发送第一条消息后，可从该项目继续这段对话。":"查企业财报、跟进投后事项，或编制资金和 LP 报表。")+'</p>'+iaComposer(false)+'<div class="iaExamples">'+iaExamples.map(([id])=>cmd("iaPreset",ico(iaTools[id].icon)+'<span>'+esc(iaExampleQuestion(id))+'</span><b aria-hidden="true">↗</b>',"iaExample",id)).join("")+'</div></section>';
  const suggested=last?(last.plan.includes("cash")?"哪些支出形成了资金缺口？":last.plan.includes("post")?"只看逾期报送":"查看这份报表的依据"):"";
  const pending=iaPending?'<section class="iaTurn"><p class="iaQuestion">'+esc(iaPending.question)+'</p><div class="iaAgentLabel">'+iaMark()+'<strong>投资业务智能体</strong></div><p class="iaWorking" role="status">'+esc(iaPending.status)+'</p></section>':"";
  const footer=iaPending?cmd("iaCancel","取消本轮","iaNext"):cmd("iaNext",esc(suggested)+" ↗","iaNext",suggested)+iaComposer(true);
@@ -86,7 +92,8 @@ function iaPage(){
 }
 function iaResult(r){
  const tables=r.tables.map(t=>'<details class="iaEvidence"><summary>'+esc(t.title)+' <small>'+t.rows.length+' 条</small></summary>'+table([...t.headers,"底稿"],t.rows.map(row=>tr([...row.cells.map(esc),row.action?cmd(row.action,"查看","textbtn",row.id):"—"])))+'</details>').join("");
- const ops=cmd("iaCSV","导出 CSV","iaToolBtn",r.id)+(r.state==="待复核"?cmd("iaReview","确认已复核","iaToolBtn",r.id):r.tables.some(t=>t.followFund!=null&&t.rows.length)?cmd("iaDispatch","生成巡检待办","iaToolBtn",r.id):"");
+ const sources=r.reportProject?cmd("nav","查看公开财报","iaToolBtn",ddUrl(r.reportProject,"reports"))+cmd("nav","查看企业回传","iaToolBtn",ddUrl(r.reportProject,"requests")):"";
+ const ops=sources+cmd("iaCSV","导出 CSV","iaToolBtn",r.id)+(r.state==="待复核"?cmd("iaReview","确认已复核","iaToolBtn",r.id):r.tables.some(t=>t.followFund!=null&&t.rows.length)?cmd("iaDispatch","生成巡检待办","iaToolBtn",r.id):"");
  return '<section class="iaTurn"><p class="iaQuestion">'+esc(r.question)+'</p><div class="iaAgentLabel">'+iaMark()+'<strong>投资业务智能体</strong></div><div class="iaAnswer"><small>'+esc(r.scope)+" · "+esc(r.engine)+'</small>'+r.notes.map(n=>'<p>'+esc(n)+'</p>').join("")+tables+'<div class="iaOutputs">'+tag(r.state)+ops+'</div></div></section>';
 }
 function iaContinuation(q,last){
@@ -114,26 +121,32 @@ async function iaRun(f){
  const data=new FormData(f),q=String(data.get("question")).trim(),msg=f.querySelector(".error");
  let fund=String(data.get("fund")),lp=String(data.get("lp"));
  if(!q){msg.textContent="请填写任务要求。";return}
- if(/(?:执行|直接|帮我|立即).{0,14}(?:付款|转账|记账|划款)|上季度|去年|上个月|本季度|按月|按季|20\d{2}\s*[年Q季/-]/i.test(q)){msg.textContent="当前任务支持台账累计统计、当前投后巡检及未来90天排期。请调整任务口径。";return}
+ const previous=iaTurns().at(-1);
+ const financial=iaFinancialIntent(q,previous);
+ if(/(?:执行|直接|帮我|立即).{0,14}(?:付款|转账|记账|划款)/.test(q)||!financial&&/上季度|去年|上个月|本季度|按月|按季|20\d{2}\s*[年Q季/-]/i.test(q)){msg.textContent="当前任务支持台账累计统计、当前投后巡检及未来90天排期。请调整任务口径。";return}
  const fs=funds.map((f,i)=>q.includes(f.name)?i:-1).filter(i=>i>=0);
  const ls=lpNames.map((n,i)=>q.includes(n)?i:-1).filter(i=>i>=0);
  if(fs.length>1||ls.length>1){msg.textContent="每次可以分析一个主体或全部主体，请指定范围。";return}
  if(fs.length)fund=String(fs[0]);if(ls.length)lp=String(ls[0]);
- const previous=iaTurns().at(-1);
  if(q.includes("全部基金"))fund="-1";if(q.includes("全部出资人"))lp="-1";
  const request={question:q,status:"正在识别任务范围…",fund,lp};
  iaPending=request;render();iaScroll();
  try{
+  if(financial){
+   const report=await iaFinancialAnswer(q,previous,fund);
+   if(iaPending!==request||route!=="agent"||externalCompany)return;
+   iaSaveAnswer({fund,lp,question:q,...report});return;
+  }
   let plan=iaRules(q),engine="本地业务规则";
   const asksCompany=db.projects.some(p=>q.includes(p.name));
   const follow=previous&&fund===iaFund&&lp===iaLP&&!fs.length&&!ls.length&&!asksCompany&&!q.includes("全部企业")?iaContinuation(q,previous):null;
   if(follow){plan=follow.plan;engine="引用上轮底稿"}
   else{
    try{const d=await ddApi("agent-plan",{question:q});if(d.available){plan=d.tasks;engine="本机模型规划"}else if(d.offline)engine+="（本机模型暂不可用）"}catch{/* Local business tools work without the planner. */}
-   if(!plan.length&&previous&&(fs.length||ls.length||/^(重新分析|再查一次|换成全部基金)[。？?]?$/.test(q)))plan=previous.plan;
+   if(!plan.length&&previous&&!previous.plan.includes("financials")&&(fs.length||ls.length||/^(重新分析|再查一次|换成全部基金)[。？?]?$/.test(q)))plan=previous.plan;
   }
   if(iaPending!==request||route!=="agent"||externalCompany)return;
-  if(!plan.length||plan.some(k=>!Object.hasOwn(iaTools,k)))throw Error("暂未识别可执行的业务任务。可选择投后巡检、资金排期或 LP 报表。");
+  if(!plan.length||plan.some(k=>!Object.hasOwn(iaTools,k)))throw Error("暂未识别可执行的业务任务。可查询企业财报、投后事项、资金排期或 LP 报表。");
   const companies=[...new Set(db.projects.filter(p=>q.includes(p.name)).map(p=>p.name))];
   if(!companies.length&&previous?.company&&plan.length===1&&plan[0]==="post"&&fund===iaFund&&!fs.length&&!q.includes("全部企业"))companies.push(previous.company);
   if(companies.length&&(companies.length>1||plan.some(k=>k!=="post")))throw Error("企业维度支持单家投后巡检，基金和 LP 统计请按基金范围执行。");
@@ -149,11 +162,14 @@ async function iaRun(f){
    }
    results.push(result);
   }
-  const run={id:crypto.randomUUID(),thread:iaThread||crypto.randomUUID(),workspaceProject:iwCurrentProject(),fund,lp,company:companies[0],question:q,scope:(fund==="-1"?"全部基金":funds[+fund].name)+(companies.length?" · "+companies[0]:"")+(plan.includes("lp")?" · "+(lp==="-1"?"全部出资人":lpNames[+lp]):""),time:new Date().toLocaleString("zh-CN"),state:"待复核",engine,plan,notes:follow?.notes||results.map(r=>r.message),tables:follow?.tables||results.flatMap(r=>r.tables)};
-  db.agentRuns.unshift(run);
-  try{save("智能体执行 · "+q)}catch(e){db.agentRuns.shift();throw e}
-  iaUseThread(run.thread);render();iaScroll();announce("分析已完成");
+  iaSaveAnswer({fund,lp,company:companies[0],question:q,scope:(fund==="-1"?"全部基金":funds[+fund].name)+(companies.length?" · "+companies[0]:"")+(plan.includes("lp")?" · "+(lp==="-1"?"全部出资人":lpNames[+lp]):""),engine,plan,notes:follow?.notes||results.map(r=>r.message),tables:follow?.tables||results.flatMap(r=>r.tables)});
  }catch(e){if(iaPending===request&&route==="agent"){iaRestoreDraft(request);$(".iaComposer .error").textContent=e.message}}
+}
+function iaSaveAnswer(answer){
+ const run={id:crypto.randomUUID(),thread:iaThread||crypto.randomUUID(),workspaceProject:iwCurrentProject(),time:new Date().toLocaleString("zh-CN"),state:"待复核",...answer};
+ db.agentRuns.unshift(run);
+ try{save("智能体执行 · "+run.question)}catch(e){db.agentRuns.shift();throw e}
+ iaUseThread(run.thread);render();iaScroll();announce("分析已完成");
 }
 function iaRestoreDraft(request){
  iaPending=null;render();iaScroll();
@@ -175,7 +191,7 @@ function iaAction(action,id){
  }
  if(action==="iaPreset"||action==="iaNext"){
   const f=document.querySelector('[data-form=iaRun]');if(!f||f.dataset.busy)return;
-  f.elements.question.value=action==="iaNext"?id:iaExamples.find(x=>x[0]===id)?.[1]||"";f.requestSubmit();return;
+  f.elements.question.value=action==="iaNext"?id:iaExampleQuestion(id);f.requestSubmit();return;
  }
  const run=db.agentRuns.find(x=>x.id===id);if(!run)return;
  if(action==="iaShow"){iaUseThread(iaThreadKey(run));render();iaScroll();return}
@@ -191,7 +207,7 @@ function iaAction(action,id){
  }
  if(action==="iaCSV"){
   const rows=[[run.question],[run.scope,run.time,run.state,run.engine],...run.notes.map(x=>[x])];
-  for(const t of run.tables)rows.push([],[t.title],[...t.headers,"依据"],...t.rows.map(r=>[...r.cells,r.action==="lpMetrics"?lpNames[Number(r.id)]+" · 回报底稿":r.action==="nav"?"基金资金计划 "+r.id:r.id]));
+  for(const t of run.tables)rows.push([],[t.title],[...t.headers,"依据"],...t.rows.map(r=>[...r.cells,r.action==="lpMetrics"?lpNames[Number(r.id)]+" · 回报底稿":r.action==="nav"&&r.id.startsWith("D/fund-")?"基金资金计划 "+r.id:r.id]));
   const cell=v=>{const s=String(v);return '"'+(/^[\s]*[=+@-]/.test(s)&&!/^-[\d,.]+$/.test(s)?"'":"")+s.replace(/"/g,'""')+'"'};
   const u=URL.createObjectURL(new Blob(["\ufeff"+rows.map(r=>r.map(cell).join(",")).join("\r\n")],{type:"text/csv;charset=utf-8"}));
   const a=document.createElement("a");a.href=u;a.download="投资业务分析-"+run.id.slice(0,8)+".csv";a.click();setTimeout(()=>URL.revokeObjectURL(u),1000);

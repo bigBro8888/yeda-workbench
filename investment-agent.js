@@ -75,13 +75,13 @@ function iaComposer(chat){
 }
 function iaPage(){
  const turns=iaTurns(),last=turns.at(-1);
- const header='<header class="iaHeader"><div>'+iaMark()+'<h1>投资业务智能体</h1></div><nav>'+cmd("iaHistory",ico("clock")+"历史对话","iaToolBtn")+cmd("iaNew",ico("plus")+"新对话","iaToolBtn")+'</nav></header>';
+ const header='<header class="iaHeader"><div>'+iaMark()+'<h1>投资业务智能体</h1></div><nav>'+cmd("iaWorkspaceRail",ico("menu")+"工作空间","iaToolBtn iwMobileOnly")+'</nav></header>';
  const welcome='<section class="iaWelcome">'+iaMark()+'<h2>今天想了解哪项投资业务？</h2><p>查投后事项、看资金缺口，或生成一份 LP 报表。</p>'+iaComposer(false)+'<div class="iaExamples">'+iaExamples.map(([id,q])=>cmd("iaPreset",ico(iaTools[id].icon)+'<span>'+q+'</span><b aria-hidden="true">↗</b>',"iaExample",id)).join("")+'</div></section>';
  const suggested=last?(last.plan.includes("cash")?"哪些支出形成了资金缺口？":last.plan.includes("post")?"只看逾期报送":"查看这份报表的依据"):"";
  const pending=iaPending?'<section class="iaTurn"><p class="iaQuestion">'+esc(iaPending.question)+'</p><div class="iaAgentLabel">'+iaMark()+'<strong>投资业务智能体</strong></div><p class="iaWorking" role="status">'+esc(iaPending.status)+'</p></section>':"";
  const footer=iaPending?cmd("iaCancel","取消本轮","iaNext"):cmd("iaNext",esc(suggested)+" ↗","iaNext",suggested)+iaComposer(true);
  const feed='<section class="iaFeed" aria-label="对话记录">'+turns.map(iaResult).join("")+pending+'</section><footer class="iaDock">'+footer+'</footer>';
- return '<article class="iaPage">'+header+(last||iaPending?feed:welcome)+'</article>';
+ return iwLayout(header,last||iaPending?feed:welcome);
 }
 function iaResult(r){
  const tables=r.tables.map(t=>'<details class="iaEvidence"><summary>'+esc(t.title)+' <small>'+t.rows.length+' 条</small></summary>'+table([...t.headers,"底稿"],t.rows.map(row=>tr([...row.cells.map(esc),row.action?cmd(row.action,"查看","textbtn",row.id):"—"])))+'</details>').join("");
@@ -148,7 +148,7 @@ async function iaRun(f){
    }
    results.push(result);
   }
-  const run={id:crypto.randomUUID(),thread:iaThread||crypto.randomUUID(),fund,lp,company:companies[0],question:q,scope:(fund==="-1"?"全部基金":funds[+fund].name)+(companies.length?" · "+companies[0]:"")+(plan.includes("lp")?" · "+(lp==="-1"?"全部出资人":lpNames[+lp]):""),time:new Date().toLocaleString("zh-CN"),state:"待复核",engine,plan,notes:follow?.notes||results.map(r=>r.message),tables:follow?.tables||results.flatMap(r=>r.tables)};
+  const run={id:crypto.randomUUID(),thread:iaThread||crypto.randomUUID(),workspaceProject:iwCurrentProject(),fund,lp,company:companies[0],question:q,scope:(fund==="-1"?"全部基金":funds[+fund].name)+(companies.length?" · "+companies[0]:"")+(plan.includes("lp")?" · "+(lp==="-1"?"全部出资人":lpNames[+lp]):""),time:new Date().toLocaleString("zh-CN"),state:"待复核",engine,plan,notes:follow?.notes||results.map(r=>r.message),tables:follow?.tables||results.flatMap(r=>r.tables)};
   db.agentRuns.unshift(run);
   try{save("智能体执行 · "+q)}catch(e){db.agentRuns.shift();throw e}
   iaUseThread(run.thread);render();iaScroll();announce("分析已完成");
@@ -163,12 +163,9 @@ window.addEventListener("hashchange",()=>{iaPending=null});
 function iaAction(action,id){
  if(externalCompany)return;
  if(action==="iaCancel"&&iaPending){iaRestoreDraft(iaPending);return}
- if(action==="iaNew"){iaUseThread("");render();$("#main textarea")?.focus();return}
- if(action==="iaHistory"){
-  const threads=new Map();
-  for(const r of db.agentRuns){const k=iaThreadKey(r);if(!threads.has(k))threads.set(k,[]);threads.get(k).push(r)}
-  drawer("历史对话",threads.size?[...threads].map(([key,rs])=>cmd("iaResume",'<b>'+esc(rs.at(-1).question)+'</b><small>'+esc(rs[0].time)+' · '+rs.length+' 轮</small>',"iaHistoryRow",key)).join(""):'<p class="dim">发送第一条消息后，对话会保存在这里。</p>');return;
- }
+ if(action.startsWith("iaWorkspace")){iwAct(action,id);return}
+ if(action==="iaNew"){iwDraft("");return}
+ if(action==="iaHistory"){iwHistory();return}
  if(action==="iaResume"){iaUseThread(id);$("#panel").close();render();iaScroll();return}
  if(action==="iaTodo"||action==="iaFinish"){
   const t=db.agentTodos.find(x=>x.id===id);if(!t)return;

@@ -15,3 +15,26 @@
 @media(max-width:650px){.iaPage{height:calc(100dvh - 90px);min-height:460px;border-radius:9px}.iaHeader{padding:10px;gap:4px}.iaHeader nav,.iaHeader>div{gap:4px}.iaHeader h1{font-size:14px}.iaHeader .iaMark{display:none}.iaToolBtn{padding:5px;font-size:12px}.iaWelcome,.iaTurn,.iaDock{width:calc(100% - 24px)}.iaWelcome h2{font-size:23px}.iaWelcome>p{line-height:1.6}.iaAnswer{margin-left:0}.iaComposer{padding:10px}.iaSendGroup small{display:none}.iaQuestion{max-width:94%}.iaScope summary{font-size:12px}.iaScope>div{width:190px}.iaExample{font-size:13px}}
 
 .iaPage .iaHeader nav{flex:0 0 auto;overflow:visible;padding:0}.iaWorking{margin:10px 0 0 35px;font-size:14px;color:var(--muted)}
+.iwSplit,.iwConversation{display:flex;flex:1;min-width:0;min-height:0}
+.iwConversation{flex-direction:column}
+.iwRail{flex:0 0 clamp(200px,16vw,248px);min-width:0;overflow-y:auto;overscroll-behavior:contain;overflow-anchor:none;background:#f2f6f3;border-right:1px solid #dbe5df;scrollbar-width:thin;scrollbar-color:#c2d1c8 transparent}
+.iwRailInner{padding:16px 12px;color:#294c42}
+.iwNew,.iwLine{width:100%;display:flex;align-items:center;gap:10px;text-align:left;border:0;border-radius:7px;font-size:14px;min-height:36px;padding:7px 10px;background:transparent;color:inherit}
+.iwNew{border:1px solid #bbd2c7;background:#e3eee7;color:#174f42;font-weight:650;margin-bottom:9px}
+.iwNew:hover,.iwLine:hover,.iwSection button:hover{background:#e3ece6}
+.iwLine.selected{background:#dcebe1;color:#194e3e;font-weight:650}
+.iwRailInner svg{width:16px;height:16px;flex-shrink:0}
+.iwLine span,.iwContext span{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0;flex:1}
+.iwLine small{font-size:11px;font-variant-numeric:tabular-nums;color:#63786e}
+.iwSection{margin:16px 4px 5px;padding:13px 4px 0;border-top:1px solid #d6e0d9;min-height:30px;display:flex;align-items:center;justify-content:space-between;font-size:13px;color:#3c554a}
+.iwSection button{border:0;background:transparent;padding:0;border-radius:4px;width:26px;height:26px;color:inherit;font-size:19px}
+.iwGroupName{margin:10px 10px 2px;font-size:11px;color:#5b7265}
+.iwContext{padding:5px 20px;display:flex;align-items:center;gap:12px;min-height:36px;border-bottom:1px solid var(--line);font-size:12px;color:#536b60}
+.iwContext .iaToolBtn{font-size:12px;flex:none}
+.iwActions{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin:14px 0}
+.iwItem{display:flex;align-items:center;gap:8px;border-bottom:1px solid #dde6e0}
+.iwItemMain{background:transparent;border:0;text-align:left;min-width:0;color:#294c42;display:flex;flex:1;align-items:flex-start;flex-direction:column;gap:5px;padding:12px 4px;overflow-wrap:anywhere}
+.iwItemMain:hover b{text-decoration:underline}.iwItemMain small{color:#5c7166}
+.iwNote{white-space:pre-wrap;overflow-wrap:anywhere;line-height:1.7}
+.iaHeader .iwMobileOnly{display:none}
+@media(max-width:950px){.iwRail{display:none}.iaHeader .iwMobileOnly{display:inline-flex}.iwContext{padding:4px 12px}.drawer .iwRailInner{padding:2px 0}}

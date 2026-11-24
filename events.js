@@ -55,6 +55,7 @@ function handleForm(f){
  if(kind==="identity"){externalCompany=v.company;sessionStorage.setItem("yeda.demo.company",externalCompany);$("#panel").close();document.body.classList.remove("menu");location.hash=externalCompany?"enterprise":"overview";render();return}
  if(externalCompany&&(kind!=="submitTask"||!db.tasks.some(t=>t.id===id&&t.company===externalCompany)))return;
  if(!externalCompany&&kind.startsWith("fb"))return fbSubmit(f);
+ if(!externalCompany&&["iwProject","iwThread","iwDoc"].includes(kind))return iwSubmit(f);
  if(!externalCompany&&kind==="iaRun"){iaRun(f);return}
  if(!externalCompany&&kind.startsWith("dd")){ddSubmit(f);return}
  const error=s=>{f.querySelector(".error").textContent=s};

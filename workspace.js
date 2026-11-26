@@ -1,7 +1,7 @@
 "use strict";
 const $=s=>document.querySelector(s),esc=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 const storage="yeda.equity.reference.1";let db=team?structuredClone(team.data):JSON.parse(localStorage.getItem(storage)||"null")||seed(),tabs=["首页"],opened=new Set(),page="首页",rid="",group="",sub="",query="",filter="",advanced=false,number=1,size=10,work="我的待办",post=false,formState=null;
-const day=()=>new Date().toLocaleDateString("sv-SE"),uid=()=>crypto.randomUUID(),btn=(text,a,v="",cls="")=>'<button type="button" class="'+cls+'" data-a="'+a+'" data-v="'+esc(v)+'">'+esc(text)+'</button>',title=t=>'<h2><b>▦</b>'+esc(t)+'</h2>',panel=(t,cls="")=>'<section class="panel '+cls+'">'+t+'</section>',fund=()=>["自管基金","参股基金"].includes(page),proj=()=>page==="直投项目管理",keyfield=()=>fund()?"基金名称":(fields[page]||"名称").split(" ")[0],record=()=>db[page]?.find(r=>r.id===rid),first=(...items)=>items.find(x=>x!==undefined&&x!==null&&x!=="")??"—";
+const day=()=>new Date().toLocaleDateString("sv-SE"),uid=()=>crypto.randomUUID(),btn=(text,a,v="",cls="")=>'<button type="button" class="'+cls+'" data-a="'+a+'" data-v="'+esc(v)+'">'+esc(text)+'</button>',title=t=>'<h2 class="sectionTitle">'+esc(t)+'</h2>',panel=(t,cls="")=>'<section class="panel '+cls+'">'+t+'</section>',fund=()=>["自管基金","参股基金"].includes(page),proj=()=>page==="直投项目管理",keyfield=()=>fund()?"基金名称":(fields[page]||"名称").split(" ")[0],record=()=>db[page]?.find(r=>r.id===rid),first=(...items)=>items.find(x=>x!==undefined&&x!==null&&x!=="")??"—";
 upgradeNotes(db);
 async function persist(){if(team)return sharedSave("state",{data:structuredClone(db)});localStorage.setItem(storage,JSON.stringify(db))}
 function notice(t){$("#toast").textContent=t;clearTimeout(notice.timer);notice.timer=setTimeout(()=>$("#toast").textContent="",2200)}
@@ -11,10 +11,36 @@ function navigate(n,id="",g="",s="",mode=""){const h="#"+[n,id,g,s,...(mode?[mod
 function route(){const values=location.hash.slice(1).split("/").map(decodeURIComponent);[page,rid="",group="",sub="",detailMode=""]=values;if(!Object.hasOwn(db,page)||!Array.isArray(db[page]))page="首页";if(!tabs.includes(page))tabs.push(page);for(const [n,,...kids] of groups)if(kids.includes(page))opened.add(n);query=filter="";docFilter={folder:"",name:"",uploader:""};if(proj()&&group==="投后管理"&&sub==="现金流"){group="权益管理";sub="资金流水";detailMode="post"}if(proj()&&group==="投后管理"&&sub==="退出计划"){group="投资退出";detailMode="post"}facets={};chosenCategory="";advanced=false;number=1;size=fund()?5:10;document.body.classList.remove("reveal");render();$("#view").scrollTop=0}
 function menu(){const nav=$("#menu"),pos=nav.scrollTop;nav.innerHTML=groups.map(([n,ic,...kids])=>'<button data-a="'+(kids.length?"group":"nav")+'" data-v="'+n+'" class="'+(page===n?"on":"")+'"><i>'+ic+'</i>'+n+(kids.length?'<em>'+(opened.has(n)?"⌃":"⌄")+'</em>':"")+'</button>'+(opened.has(n)?kids.map(c=>btn(pageLabel(c),"nav",c,"child "+(page===c?"on":""))).join(""):"")).join("");nav.scrollTop=pos;$("#tabs").innerHTML=tabs.map(n=>'<span class="'+(n===page?"on":"")+'">'+btn(pageLabel(n),"nav",n)+btn("×","closeTab",n)+'</span>').join("")}
 function table(cols,rows){return '<div class="tablewrap"><table><thead><tr>'+cols.map(c=>'<th>'+esc(c)+'</th>').join("")+'</tr></thead><tbody>'+rows.map(cells=>'<tr>'+cells.map(v=>'<td>'+v+'</td>').join("")+'</tr>').join("")+'</tbody></table>'+(!rows.length?'<div class="empty">暂无数据</div>':"")+'</div>'}
+let overviewScope="投前";
+const overviewScopes=["投前","投后","对照"];
+function overviewCards(after){
+ const funds=db.自管基金.filter(r=>(r.基金状态!=="募集期")===after);
+ const partners=db.参股基金.filter(r=>(r.基金状态!=="募集期")===after);
+ const projects=db.直投项目管理.filter(r=>(projectStages.indexOf(r.项目状态)>=5)===after);
+ function amount(rows,key){
+  const value=rows.reduce((sum,row)=>sum+(key.startsWith("我方")?ownAmount(row,key.slice(2)):Number(row[key])||0),0);
+  return value.toLocaleString();
+ }
+ const metrics=[
+  ["自管基金","支",funds,"我方认缴","我方认缴","我方实缴","我方实缴"],
+  ["参股基金","支",partners,"基金认缴","基金认缴规模","基金实缴","基金实缴规模"],
+  ["直投项目","个",projects,"拟投金额","拟投资金额","累计出资","累计出资金额"],
+  ["我负责的项目","个",projects.filter(r=>r.项目经理===actor()),"拟投金额","拟投资金额","累计出资","累计出资金额"]
+ ];
+ return '<div class="cards overviewCards">'+metrics.map(([label,unit,rows,left,k,right,l])=>
+  '<div class="metric"><h3>'+label+'</h3><div class="metricCount">'+rows.length+'<small>'+unit+'</small></div>'+
+  '<dl class="metricAmounts">'+[[left,k],[right,l]].map(([name,key])=>'<div><dt>'+name+'</dt><dd>'+amount(rows,key)+'</dd></div>').join("")+'</dl></div>').join("")+'</div>';
+}
+function overview(){
+ const options=overviewScopes.map(s=>'<button type="button" data-a="overviewScope" data-v="'+s+'" aria-pressed="'+(s===overviewScope)+'">'+s+'</button>').join("");
+ const stages=overviewScope==="对照"?["投前","投后"]:[overviewScope];
+ return panel('<div class="overviewHead"><h1>投资总览</h1><div class="scopeSwitch" role="group" aria-label="统计阶段">'+options+'</div></div>'+
+  stages.map(s=>'<div class="overviewCaption"><h2>'+s+'概况</h2><small>金额单位 · 万元</small></div>'+overviewCards(s==="投后")).join(""),"overview");
+}
 function dashboard(){
- const stats=(after)=>{const fs=db.自管基金.filter(r=>(r.基金状态!=="募集期")===after),partners=db.参股基金.filter(r=>(r.基金状态!=="募集期")===after),ps=db.直投项目管理.filter(r=>(projectStages.indexOf(r.项目状态)>=5)===after);const totals=(rs,k)=>k.startsWith("我方")?rs.reduce((sum,f)=>sum+ownAmount(f,k.slice(2)),0).toLocaleString():rs.reduce((s,r)=>s+(Number(r[k])||0),0).toLocaleString();
- return [[fs,"自管基金数量（支）","我方认缴金额","我方实缴金额","我方认缴","我方实缴"],[partners,"参股基金数量（支）","基金认缴金额","基金实缴金额","基金认缴规模","基金实缴规模"],[ps,"项目数量（个）","拟投金额","累计出资金额","拟投资金额","累计出资金额"],[ps.filter(r=>r.项目经理===actor()),"我负责的项目（个）","拟投金额","累计出资金额","拟投资金额","累计出资金额"]].map(([rs,n,x,y,k,l])=>'<div class="metric"><div class="metricTop"><span class="badge">▮▥</span><div><strong>'+rs.length+'</strong><span class="muted">'+n+'</span></div></div><div class="pair">'+[[x,k],[y,l]].map(([a,b])=>'<div><small>'+a+'（万元）</small><strong>'+totals(rs,b)+'</strong></div>').join("")+'</div></div>').join("")};
- return panel(title("数据总览")+[false,true].map(a=>'<h3>投'+(a?'后':'前')+'-数据总览</h3><div class="cards">'+stats(a)+'</div>').join(""),"dash")+panel(title("功能入口")+'<div class="shortcuts">'+groups.filter(([n])=>!["上市公司","AI 能力"].includes(n)).map(([n,ic,...kids])=>'<button class="shortcut" data-a="nav" data-v="'+(kids[0]||n)+'"><b class="badge">'+ic+'</b>'+n+'<span>›</span></button>').join("")+'</div>',"dash")+panel(homeHeading("风险信息","riskReset")+riskTable(risks().slice(0,5)))+panel(homeHeading("日常工作","allWork")+'<div class="pills">'+["我的待办","我的申请","我的已办","我的知会","我的消息"].map(v=>btn(v,"worktab",v,work===v?"active":"")).join("")+'</div>'+table(["任务主题","提交人","当前节点","到达时间"],riskWork().slice(0,5)))+panel(homeHeading("项目跟进","allFollow")+table(["企业名称","事项名称","跟进日期"],db.项目跟进管理.slice(0,5).map(r=>[esc(r.企业全称),btn(r.事项名称,"followDetail",r.id,"link"),esc(r.跟进日期)])));
+ const shortcuts=groups.filter(([n])=>!["上市公司","AI 能力"].includes(n)).map(([n,ic,...kids])=>
+  '<button type="button" class="shortcut" data-a="nav" data-v="'+(kids[0]||n)+'"><b class="badge" aria-hidden="true">'+ic+'</b>'+n+'<span aria-hidden="true">›</span></button>').join("");
+ return overview()+panel(title("功能入口")+'<div class="shortcuts">'+shortcuts+'</div>',"dash")+panel(homeHeading("风险信息","riskReset")+riskTable(risks().slice(0,5)))+panel(homeHeading("日常工作","allWork")+'<div class="pills">'+["我的待办","我的申请","我的已办","我的知会","我的消息"].map(v=>btn(v,"worktab",v,work===v?"active":"")).join("")+'</div>'+table(["任务主题","提交人","当前节点","到达时间"],riskWork().slice(0,5)))+panel(homeHeading("项目跟进","allFollow")+table(["企业名称","事项名称","跟进日期"],db.项目跟进管理.slice(0,5).map(r=>[esc(r.企业全称),btn(r.事项名称,"followDetail",r.id,"link"),esc(r.跟进日期)])));
 }
 function tabButtons(arr,active,act){return '<div class="pills">'+arr.map(n=>btn(n,act,n,active===n?"active":"")).join("")+'</div>'}
 const reportSource={"自管基金台账报表":"自管基金","参股基金台账报表":"参股基金","项目台账报表":"直投项目管理"};
@@ -38,7 +64,7 @@ function pager(total){const pages=Math.max(1,Math.ceil(total/size));return '<div
 function card(r){
  const stages=fund()?fundStages:projectStages,status=fund()?r.基金状态:r.项目状态;
  const pairs=fund()?["基金管理人","基金经理","工商登记时间","基金类型","已投项目数","基金认缴规模","基金实缴规模","已投资金额"]:["管理平台","出资主体","项目经理","拟投资金额","首次出资日期","累计出资金额"];
- return '<section class="box"><span class="mini">'+esc((r.基金简称||r.企业简称||"项").slice(0,2))+'</span><div class="boxbody"><div class="bar">'+btn(fund()?r.基金简称+" | "+r.基金名称:r.项目名称+" | "+r.企业全称,"detail",r.id,"name")+'<small>'+esc(fund()?"最新编辑："+first(r.录入时间,r.工商登记时间):status)+'</small></div><div class="facts">'+pairs.map(k=>'<div>'+k+'： '+esc(first(r[k]))+'</div>').join("")+'</div>'+(proj()?btn("投前管理","detail",r.id)+btn("投后管理","postdetail",r.id)+(r.项目状态==="已终止"?"":btn("终止","terminate",r.id)):"")+'<div class="steps">'+stages.map(s=>'<span class="'+(s===status?"active":"")+'">'+s+'</span>').join("")+'</div></div></section>';
+ return '<section class="box"><span class="mini">'+esc((r.基金简称||r.企业简称||"项").slice(0,2))+'</span><div class="boxbody"><div class="bar">'+btn(fund()?r.基金简称+" | "+r.基金名称:r.项目名称+" | "+r.企业全称,"detail",r.id,"name")+'<small>'+esc(fund()?"最新编辑："+first(r.录入时间,r.工商登记时间):status)+'</small></div><div class="facts">'+pairs.map(k=>'<div><small>'+k+'</small><strong>'+esc(first(r[k]))+'</strong></div>').join("")+'</div>'+(proj()?btn("投前管理","detail",r.id)+btn("投后管理","postdetail",r.id)+(r.项目状态==="已终止"?"":btn("终止","terminate",r.id)):"")+'<div class="steps">'+stages.map(s=>'<span class="'+(s===status?"active":"")+'">'+s+'</span>').join("")+'</div></div></section>';
 }
 function actions(r){
  if(page==="资源池")return btn("企业查询","companyInfo",r.id,"link")+(r.是否已入库==="是"?"":btn("入库申请","admit",r.id,"link"))+btn("编辑","edit",r.id,"link")+btn("跟进","follow",r.id,"link")+btn("删除","remove",r.id,"link");
@@ -136,6 +162,9 @@ document.addEventListener("click",async e=>{
  case "nav":post=false;navigate(v);return;
  case "closeTab":tabs=tabs.filter(x=>x!==v);if(page===v)navigate(tabs.at(-1)||"首页");else menu();return;
  case "work":work="我的待办";navigate("首页");setTimeout(()=>$("#view .pills")?.scrollIntoView(),40);return;
+ case "overviewScope":
+  if(overviewScopes.includes(v)){overviewScope=v;render();document.querySelector('.scopeSwitch [aria-pressed="true"]')?.focus({preventScroll:true})}
+  return;
  case "worktab":work=v;render();return;
  case "more":query=$("#search [name=q]").value;advanced=!advanced;render();return;
  case "category":chosenCategory=v;render();return;

@@ -15,13 +15,13 @@ function platformCards(){
  const rs=visibleRows();return toolbar()+panel(rs.map(r=>'<div class="box"><div class="mini">企</div><div class="boxbody">'+btn(r.管理平台名称,"viewRow",r.id,"name")+kv(r,fields.管理平台.split(" ").slice(1))+btn("编辑","edit",r.id,"link")+'</div></div>').join("")||'<div class="empty">暂无数据</div>');
 }
 function riskWork(){
- return (db.notes["daily"]||[]).filter(n=>n.type===work||work==="我的申请").map(n=>[btn(n.name,"job",n.id,"link"),esc(n.person),esc(n.stage),esc(n.date)]);
+ return (db.notes["daily"]||[]).filter(myJob).map(n=>[btn(n.name,"job",n.id,"link"),esc(n.person),esc(n.stage),esc(n.date)]);
 }
 function workflowSection(){return group==="投资流程"||["退出决策","退出计划","用印管理","公司三会","协议签订","委派人员","一般事项","重大风险事项","重要事项决策","缴款通知","注资缴款","基金分配","基金管理费"].includes(sub)}
 function workflowAction(item){
  if(!workflowSection())return "";
  if(item.状态==="审批中")return btn("查看待办","work","","link");
- if(item.状态==="草稿"||item.状态==="已退回")return btn("提交审批","submitStage",item.id,"link");
+ if(writable()&&(item.状态==="草稿"||item.状态==="已退回"))return btn("提交审批","submitStage",item.id,"link");
  return "";
 }
 function stageRecord(item){
@@ -37,5 +37,5 @@ function reviewStage(item,accept){
 }
 function jobDetail(item){
  const job=db.notes.daily?.find(n=>n.id===item);if(!job)return;
- modal(job.name,kv({任务主题:job.name,所属模块:job.module,业务事项:job.sub,提交人:job.person,当前节点:job.stage,到达时间:job.date},["任务主题","所属模块","业务事项","提交人","当前节点","到达时间"])+(job.type==="我的待办"?btn("通过","approve",item,"primary")+" "+btn("退回","reject",item):""))
+ modal(job.name,kv({任务主题:job.name,所属模块:job.module,业务事项:job.sub,提交人:job.person,当前节点:job.stage,到达时间:job.date},["任务主题","所属模块","业务事项","提交人","当前节点","到达时间"])+(canReview(job)?btn("通过","approve",item,"primary")+" "+btn("退回","reject",item):""))
 }

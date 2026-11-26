@@ -32,7 +32,7 @@ async function saveFinancial(form,values,newFiles) {
  const attachments=[...(existing?.files||[])];
  for(const f of files){const id=uid();await fileStore("readwrite",s=>s.put(f,id));newFiles.push(id);attachments.push({id,name:f.name})}
  delete values.files;delete values.extractFiles;
- Object.assign(values,{files:attachments,报表期间:values.年度+"年 "+values.期间,填写人:"演示用户",填写时间:day()});
+ Object.assign(values,{files:attachments,报表期间:values.年度+"年 "+values.期间,填写人:actor(),填写时间:day()});
  if(existing)Object.assign(existing,values);else items.unshift({...values,id:uid()});
  logs(rid,"更新财务情况");
 }

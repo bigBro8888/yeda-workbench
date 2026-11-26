@@ -23,7 +23,7 @@ function buildIndustryReport(date) {
 }
 function askView() {
  if(!researcher)return panel(title("智能问数")+'<form id="filterAgents" class="queryline"><label>搜索<input name="q" value="'+esc(researchFilter)+'"></label><label>标签<select name="tag">'+["全部标签","占位标签","演示用"].map(v=>'<option '+(v===agentTag?"selected":"")+'>'+v+'</option>').join("")+'</select></label><button>筛选</button></form><div class="agentChoices">'+agents.filter((name)=>name.includes(researchFilter)&&(!agentTag||agentTag==="全部标签"||agentTag===(name==="智能问数"?"演示用":"占位标签"))).map(name=>btn(name,"askAgent",name)).join("")+'</div>');
- const history=(db.settings.localDialogs||{})[researcher]||[];
+ const history=chatHistory()[researcher]||[];
  return panel('<div class="bar">'+title(researcher)+btn("返回智能体列表","askBack")+'</div><p class="muted">查询当前浏览器保存的基金、项目、财报及风险记录。</p>'+history.map(h=>'<section class="askTurn"><b>'+esc(h.question)+'</b><pre>'+esc(h.answer)+'</pre></section>').join("")+'<form id="askPortfolio" class="queryline"><label>问题<input name="question" placeholder="例如：统计今年公司财报" required></label><button class="primary">查询</button></form>');
 }
 function answerPortfolio(question) {
@@ -44,14 +44,19 @@ function answerPortfolio(question) {
  if(/尽调|项目|跟进|企业/.test(question))return "共 "+scope.length+" 个直投项目。\n"+scope.map(p=>p.项目名称+"　"+p.项目状态+"　"+first(p.主营业务)+"　项目经理 "+first(p.项目经理)).join("\n")+"\n来源：直投项目管理 / 企业概况";
  return "当前可查询基金认缴实缴、项目档案、已录入财报和风险记录。请说明查询对象和指标。";
 }
-document.addEventListener("submit",e=>{
+function chatHistory(){return team?JSON.parse(sessionStorage.getItem("team.dialogs."+actor())||"{}"):(db.settings.localDialogs??={})}
+document.addEventListener("submit",async e=>{
  const f=e.target;if(!["industryConfig","generateReport","filterAgents","askPortfolio"].includes(f.id))return;e.preventDefault();
  const values=Object.fromEntries(new FormData(f));
- if(f.id==="industryConfig"){db.settings.industryMonitor={...values,limit:Number(values.limit)};persist();notice("行业配置已保存");return}
- if(f.id==="generateReport"){db.行业报告.unshift(buildIndustryReport(values.date));persist();render();notice("报告已生成");return}
+ try{if(f.id==="industryConfig"){db.settings.industryMonitor={...values,limit:Number(values.limit)};await persist();notice("行业配置已保存");return}
+ if(f.id==="generateReport"){db.行业报告.unshift(buildIndustryReport(values.date));await persist();render();notice("报告已生成");return}
  if(f.id==="filterAgents"){researchFilter=values.q.trim();agentTag=values.tag;render();return}
  if(!values.question.trim())return;
- const dialogs=db.settings.localDialogs??={};(dialogs[researcher]??=[]).push({question:values.question.trim(),answer:answerPortfolio(values.question.trim())});persist();render();
+ const question=values.question.trim(),selected=researcher;
+ const context=answerPortfolio(question);
+ const answer=team?.services.model?(await teamRequest("model",{question,context:context+"\n"+portfolioContext(question)})).answer:context;
+ const dialogs=chatHistory();(dialogs[selected]??=[]).push({question,answer});if(team)sessionStorage.setItem("team.dialogs."+actor(),JSON.stringify(dialogs));else await persist();render();
+ }catch(err){showFailure(err)}
 });
 document.addEventListener("change",e=>{if(e.target.name==="code"&&e.target.form?.id==="industryConfig"){const opt=Array.from(e.target.list.options).find(o=>o.value===e.target.value);if(opt)e.target.form.elements.namedItem("name").value=opt.textContent}});
 document.addEventListener("click",e=>{const button=e.target.closest("[data-a]");if(!button)return;const a=button.dataset.a;

@@ -1,9 +1,9 @@
 "use strict";
 const $=s=>document.querySelector(s),esc=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
-const storage="yeda.equity.reference.1";let db=JSON.parse(localStorage.getItem(storage)||"null")||seed(),tabs=["首页"],opened=new Set(),page="首页",rid="",group="",sub="",query="",filter="",advanced=false,number=1,size=10,work="我的待办",post=false,formState=null;
+const storage="yeda.equity.reference.1";let db=team?structuredClone(team.data):JSON.parse(localStorage.getItem(storage)||"null")||seed(),tabs=["首页"],opened=new Set(),page="首页",rid="",group="",sub="",query="",filter="",advanced=false,number=1,size=10,work="我的待办",post=false,formState=null;
 const day=()=>new Date().toLocaleDateString("sv-SE"),uid=()=>crypto.randomUUID(),btn=(text,a,v="",cls="")=>'<button type="button" class="'+cls+'" data-a="'+a+'" data-v="'+esc(v)+'">'+esc(text)+'</button>',title=t=>'<h2><b>▦</b>'+esc(t)+'</h2>',panel=(t,cls="")=>'<section class="panel '+cls+'">'+t+'</section>',fund=()=>["自管基金","参股基金"].includes(page),proj=()=>page==="直投项目管理",keyfield=()=>fund()?"基金名称":(fields[page]||"名称").split(" ")[0],record=()=>db[page]?.find(r=>r.id===rid),first=(...items)=>items.find(x=>x!==undefined&&x!==null&&x!=="")??"—";
 upgradeNotes(db);
-function persist(){localStorage.setItem(storage,JSON.stringify(db))}
+async function persist(){if(team)return sharedSave("state",{data:structuredClone(db)});localStorage.setItem(storage,JSON.stringify(db))}
 function notice(t){$("#toast").textContent=t;clearTimeout(notice.timer);notice.timer=setTimeout(()=>$("#toast").textContent="",2200)}
 let detailMode="",projectView="卡片视图";
 function projectDetailMode(){return detailMode||((group!=="文档资料"&&group in projectPostGroups)?"post":"pre")}
@@ -13,7 +13,7 @@ function menu(){const nav=$("#menu"),pos=nav.scrollTop;nav.innerHTML=groups.map(
 function table(cols,rows){return '<div class="tablewrap"><table><thead><tr>'+cols.map(c=>'<th>'+esc(c)+'</th>').join("")+'</tr></thead><tbody>'+rows.map(cells=>'<tr>'+cells.map(v=>'<td>'+v+'</td>').join("")+'</tr>').join("")+'</tbody></table>'+(!rows.length?'<div class="empty">暂无数据</div>':"")+'</div>'}
 function dashboard(){
  const stats=(after)=>{const fs=db.自管基金.filter(r=>(r.基金状态!=="募集期")===after),partners=db.参股基金.filter(r=>(r.基金状态!=="募集期")===after),ps=db.直投项目管理.filter(r=>(projectStages.indexOf(r.项目状态)>=5)===after);const totals=(rs,k)=>k.startsWith("我方")?rs.reduce((sum,f)=>sum+ownAmount(f,k.slice(2)),0).toLocaleString():rs.reduce((s,r)=>s+(Number(r[k])||0),0).toLocaleString();
- return [[fs,"自管基金数量（支）","我方认缴金额","我方实缴金额","我方认缴","我方实缴"],[partners,"参股基金数量（支）","基金认缴金额","基金实缴金额","基金认缴规模","基金实缴规模"],[ps,"项目数量（个）","拟投金额","累计出资金额","拟投资金额","累计出资金额"],[ps.filter(r=>r.项目经理==="演示用户"),"我负责的项目（个）","拟投金额","累计出资金额","拟投资金额","累计出资金额"]].map(([rs,n,x,y,k,l])=>'<div class="metric"><div class="metricTop"><span class="badge">▮▥</span><div><strong>'+rs.length+'</strong><span class="muted">'+n+'</span></div></div><div class="pair">'+[[x,k],[y,l]].map(([a,b])=>'<div><small>'+a+'（万元）</small><strong>'+totals(rs,b)+'</strong></div>').join("")+'</div></div>').join("")};
+ return [[fs,"自管基金数量（支）","我方认缴金额","我方实缴金额","我方认缴","我方实缴"],[partners,"参股基金数量（支）","基金认缴金额","基金实缴金额","基金认缴规模","基金实缴规模"],[ps,"项目数量（个）","拟投金额","累计出资金额","拟投资金额","累计出资金额"],[ps.filter(r=>r.项目经理===actor()),"我负责的项目（个）","拟投金额","累计出资金额","拟投资金额","累计出资金额"]].map(([rs,n,x,y,k,l])=>'<div class="metric"><div class="metricTop"><span class="badge">▮▥</span><div><strong>'+rs.length+'</strong><span class="muted">'+n+'</span></div></div><div class="pair">'+[[x,k],[y,l]].map(([a,b])=>'<div><small>'+a+'（万元）</small><strong>'+totals(rs,b)+'</strong></div>').join("")+'</div></div>').join("")};
  return panel(title("数据总览")+[false,true].map(a=>'<h3>投'+(a?'后':'前')+'-数据总览</h3><div class="cards">'+stats(a)+'</div>').join(""),"dash")+panel(title("功能入口")+'<div class="shortcuts">'+groups.filter(([n])=>!["上市公司","AI 能力"].includes(n)).map(([n,ic,...kids])=>'<button class="shortcut" data-a="nav" data-v="'+(kids[0]||n)+'"><b class="badge">'+ic+'</b>'+n+'<span>›</span></button>').join("")+'</div>',"dash")+panel(homeHeading("风险信息","riskReset")+riskTable(risks().slice(0,5)))+panel(homeHeading("日常工作","allWork")+'<div class="pills">'+["我的待办","我的申请","我的已办","我的知会","我的消息"].map(v=>btn(v,"worktab",v,work===v?"active":"")).join("")+'</div>'+table(["任务主题","提交人","当前节点","到达时间"],riskWork().slice(0,5)))+panel(homeHeading("项目跟进","allFollow")+table(["企业名称","事项名称","跟进日期"],db.项目跟进管理.slice(0,5).map(r=>[esc(r.企业全称),btn(r.事项名称,"followDetail",r.id,"link"),esc(r.跟进日期)])));
 }
 function tabButtons(arr,active,act){return '<div class="pills">'+arr.map(n=>btn(n,act,n,active===n?"active":"")).join("")+'</div>'}
@@ -41,8 +41,8 @@ function card(r){
  return '<section class="box"><span class="mini">'+esc((r.基金简称||r.企业简称||"项").slice(0,2))+'</span><div class="boxbody"><div class="bar">'+btn(fund()?r.基金简称+" | "+r.基金名称:r.项目名称+" | "+r.企业全称,"detail",r.id,"name")+'<small>'+esc(fund()?"最新编辑："+first(r.录入时间,r.工商登记时间):status)+'</small></div><div class="facts">'+pairs.map(k=>'<div>'+k+'： '+esc(first(r[k]))+'</div>').join("")+'</div>'+(proj()?btn("投前管理","detail",r.id)+btn("投后管理","postdetail",r.id)+(r.项目状态==="已终止"?"":btn("终止","terminate",r.id)):"")+'<div class="steps">'+stages.map(s=>'<span class="'+(s===status?"active":"")+'">'+s+'</span>').join("")+'</div></div></section>';
 }
 function actions(r){
- if(page==="资源池")return (r.是否已入库==="是"?"":btn("入库申请","admit",r.id,"link"))+btn("编辑","edit",r.id,"link")+btn("跟进","follow",r.id,"link")+btn("删除","remove",r.id,"link");
- if(page==="股票列表")return btn("权益变更","stock",r.id,"link")+btn("编辑","edit",r.id,"link")+btn("删除","remove",r.id,"link");
+ if(page==="资源池")return btn("企业查询","companyInfo",r.id,"link")+(r.是否已入库==="是"?"":btn("入库申请","admit",r.id,"link"))+btn("编辑","edit",r.id,"link")+btn("跟进","follow",r.id,"link")+btn("删除","remove",r.id,"link");
+ if(page==="股票列表")return (team?.services.quotes?btn("更新行情","applyQuote",r.id,"link"):"")+btn("权益变更","stock",r.id,"link")+btn("编辑","edit",r.id,"link")+btn("删除","remove",r.id,"link");
  if(page==="股票变动")return btn("编辑","editChange",r.id,"link")+btn("删除","remove",r.id,"link");
  if(!readonly()||page==="项目跟进管理")return btn("编辑","edit",r.id,"link")+btn("删除","remove",r.id,"link");
  return "";
@@ -54,15 +54,15 @@ function kv(r,keys){return '<div class="detailgrid">'+keys.map(k=>'<div><small>'
 function currentGroups(){return proj()?(projectDetailMode()==="post"?projectPostGroups:{"项目概况":[],"投资流程":projectStages,"文档资料":["文档资料"]}):detailGroups}
 function detailPage(r){const tree=currentGroups();if(!Object.hasOwn(tree,group))group=Object.keys(tree)[0];if(!tree[group].includes(sub))sub=tree[group][0]||"";
  const header=panel('<div class="bar"><h2>'+esc(r.基金名称||r.项目名称)+'</h2>'+btn("返回列表","nav",page)+'</div><p class="muted">法定代表人或执行事务合伙人：'+esc(first(r.法定代表人或执行事务合伙人))+'　　统一社会信用代码：'+esc(first(r.统一社会信用代码))+'　　工商注册时间：'+esc(first(r.工商登记时间))+'</p>'+tabButtons(Object.keys(tree),group,"detailGroup"));
- if(!sub)return header+panel('<div class="bar"><h3>'+group+'</h3><div>'+btn("变更记录","history")+btn("编辑","edit",rid)+'</div></div>'+kv(r,fund()?fundFields:[...new Set([...fields.直投项目管理.split(" "),...enterpriseFields])]));
+ if(!sub)return header+panel('<div class="bar"><h3>'+group+'</h3><div>'+btn("企业查询","companyInfo",rid)+btn("变更记录","history")+btn("编辑","edit",rid)+'</div></div>'+kv(r,fund()?fundFields:[...new Set([...fields.直投项目管理.split(" "),...enterpriseFields])]));
  const allNotes=db.notes[rid]?.[sub]||[],rows=allNotes.filter(n=>!query||Object.values(n).some(v=>String(v).includes(query))),cols=(subFields[sub]||"事项名称 状态 填写人 填写时间 备注").split(" ");
  if(sub==="文档资料")return header+panel(documents(rows));
  number=Math.max(1,Math.min(number,Math.ceil(rows.length/size)));const start=(number-1)*size;
- return header+panel((tree[group].length>1?tabButtons(tree[group],sub,"detailSub"):"")+'<form class="queryline" id="noteQuery"><label>关键字<input name="q" value="'+esc(query)+'"></label><button>查询</button>'+btn("重置","reset")+'</form>'+'<div class="bar"><h3>'+esc(sub)+'</h3>'+btn(sub==="文档资料"?"上传文件":"新增","addNote","","primary")+'</div>'+table(["序号",...cols,"操作"],rows.slice(start,start+size).map((n,i)=>[String(start+i+1),...cols.map((k,i)=>i===0?btn(first(n[k]),"noteInfo",n.id,"link"):esc(first(n[k]))),sub==="文档资料"?btn("下载","download",n.id,"link"):((!workflowSection()||!["审批中","审批通过"].includes(n.状态))?btn("编辑","editNote",n.id,"link")+btn("删除","removeNote",n.id,"link"):"")+workflowAction(n)]))+pager(rows.length));
+ return header+panel((tree[group].length>1?tabButtons(tree[group],sub,"detailSub"):"")+'<form class="queryline" id="noteQuery"><label>关键字<input name="q" value="'+esc(query)+'"></label><button>查询</button>'+btn("重置","reset")+'</form>'+'<div class="bar"><h3>'+esc(sub)+'</h3>'+btn(sub==="文档资料"?"上传文件":"新增","addNote","","primary")+'</div>'+table(["序号",...cols,"操作"],rows.slice(start,start+size).map((n,i)=>[String(start+i+1),...cols.map((k,i)=>i===0?btn(first(n[k]),"noteInfo",n.id,"link"):esc(first(n[k]))),sub==="文档资料"?btn("下载","download",n.id,"link"):((!n.receiptId&&(!workflowSection()||!["审批中","审批通过"].includes(n.状态)))?btn("编辑","editNote",n.id,"link")+btn("删除","removeNote",n.id,"link"):"")+workflowAction(n)]))+pager(rows.length));
 }
 function settings(){const cfg=page==="基础管理设置"?["不开启流程时默认提交状态","开启审批流程","支持历史数据导入","投后自动定期推送"]:["基金类型","投资流程环节","投资流程必要环节","投后管理功能","必要环节校验"];return panel(title(pageLabel(page))+'<form id="config">'+["自管基金","参股基金","直投项目"].map(n=>'<h3>'+n+'</h3><div class="fields">'+cfg.map(k=>input(n+" · "+k,db.settings[n+k],k.includes("状态")?["草稿","审批通过"]:page==="基础管理设置"?["是","否"]:null)).join("")+'</div><br>').join("")+'<button class="primary">保存配置</button></form>')}
-function externalPage(){const local={"行业配置":industryConfig,"行业报告":industryReports,"智能问数":askView,"合同校验":contractScreen,"文档识别":recognitionScreen};if(local[page])return local[page]();return panel(title(page)+'<div class="empty">'+(page==="支付现金流"?"原系统此入口返回“该页面无法访问”。":page==="报表配置"?"原系统的报表配置服务返回 502，当前尚未接入报表设计器。":"此功能使用独立服务，当前本地版尚未接入。")+'</div>'+btn("返回首页","nav","首页"))}
-function render(){document.title=pageLabel(page)+" - 股权管理系统";menu();$("#view").innerHTML=page==="首页"?dashboard():page==="驾驶舱"?cockpit():page==="支付现金流"||groups.at(-1).slice(2).includes(page)?externalPage():["基础管理设置","业务流程设置"].includes(page)?settings():record()&&(fund()||proj())?detailPage(record()) :["文件分类配置","标签管理","行业图谱"].includes(page)?categories():page==="管理平台"?platformCards():reportSource[page]?ledgerPage():listPage()}
+function externalPage(){const local={"报表配置":templateView,"支付现金流":paymentsView,"投资建议书":proposalView,"易投AI":assistantHome,"行业配置":industryConfig,"行业报告":industryReports,"智能问数":askView,"合同校验":contractScreen,"文档识别":recognitionScreen};if(local[page])return local[page]();return panel(title(page)+'<div class="empty">'+(page==="支付现金流"?"原系统此入口返回“该页面无法访问”。":page==="报表配置"?"原系统的报表配置服务返回 502，当前尚未接入报表设计器。":"此功能使用独立服务，当前本地版尚未接入。")+'</div>'+btn("返回首页","nav","首页"))}
+function render(){document.title=pageLabel(page)+" - 股权管理系统";menu();$("#view").innerHTML=page==="首页"?dashboard():page==="驾驶舱"?cockpit():page==="支付现金流"||groups.at(-1).slice(2).includes(page)?externalPage():["基础管理设置","业务流程设置"].includes(page)?settings():record()&&(fund()||proj())?detailPage(record()) :["文件分类配置","标签管理","行业图谱"].includes(page)?categories():page==="管理平台"?platformCards():reportSource[page]?ledgerPage():listPage();teamControls()}
 function input(k,v,choices,required=false){
  const opts=choices||options[k]||(/^是否/.test(k)?["是","否"]:null),name=' name="'+esc(k)+'" '+(required?"required":"");
  let control;
@@ -78,21 +78,21 @@ function editor(mode,r={}){
 
  let initial={...r};
  if(!r.id&&mode==="note"&&sub==="重大风险事项")initial.发生日期=day();
- if(mode==="follow")initial={企业全称:r.企业全称,事项名称:"",跟进日期:day(),记录人员:"演示用户",数据来源:"投前"};
+ if(mode==="follow")initial={企业全称:r.企业全称,事项名称:"",跟进日期:day(),记录人员:actor(),数据来源:"投前"};
  if(mode==="admit")initial={项目名称:r.企业简称+"投资项目",项目经理:r.项目经理};
- if(mode==="note"&&workflowSection()&&db.settings[(proj()?"直投项目":page)+"开启审批流程"]==="否"&&!r.id)initial.状态=db.settings[(proj()?"直投项目":page)+"不开启流程时默认提交状态"]||"草稿";
- if(mode==="new")initial={基金注册状态:"已注册",基金状态:fundStages[0],所属部门:"股权投资部",所属小组:"基金组",基金经理:"演示用户",录入人:"演示用户",录入时间:day(),填写时间:day(),填写人:"演示用户"};
+ if(!team&&mode==="note"&&workflowSection()&&db.settings[(proj()?"直投项目":page)+"开启审批流程"]==="否"&&!r.id)initial.状态=db.settings[(proj()?"直投项目":page)+"不开启流程时默认提交状态"]||"草稿";
+ if(mode==="new")initial={基金注册状态:"已注册",基金状态:fundStages[0],所属部门:"股权投资部",所属小组:"基金组",基金经理:actor(),录入人:actor(),录入时间:day(),填写时间:day(),填写人:actor()};
  formState={mode,id:r.id||"",keys};const must=mode==="note"?[keys[0]]:mode==="stock"||mode==="editChange"?["发生日期","操作类型",stockDelta]:fund()?["基金名称","基金简称","基金状态","基金类型","基金经理"]:["资源池","企业库"].includes(page)&&["new","edit"].includes(mode)?["企业全称","企业简称"]:[keys[0]];
  modal(({follow:"添加跟进记录",stock:"权益变更",editChange:"编辑股票变动",admit:"入库申请",note:sub,new:fund()?"新增基金":page==="资源池"?"新增资源池企业":"新增"+page,edit:"编辑"+page})[mode],'<div class="fields">'+keys.map(k=>mode==="note"&&workflowSection()&&k==="状态"?'<label>状态<input name="状态" value="'+esc(initial[k]||"草稿")+'" readonly></label>':input(k,initial[k],null,must.includes(k))).join("")+'</div>'+((mode==="new"||mode==="edit")&&["资源池","企业库"].includes(page)?structures(initial,true):""),true);
 }
-function logs(id,what){db.notes[id]??={};(db.notes[id].变更记录??=[]).unshift({操作:what,填写人:"演示用户",填写时间:day()})}
+function logs(id,what){db.notes[id]??={};(db.notes[id].变更记录??=[]).unshift({操作:what,填写人:actor(),填写时间:day()})}
 function saveForm(v){
  const {mode,id}=formState,rs=db[page],r=rs.find(z=>z.id===id);
  if(mode==="remove"&&page==="股票变动"){updateStockChange(owningStock(r),r,null);return}
  if(mode==="remove"&&page==="股票列表"&&db.股票变动.some(change=>owningStock(change)?.id===id))throw Error("请先处理该持仓的变动记录");
  if(mode==="terminate"){r.终止前状态=r.项目状态;r.项目状态="已终止";r.终止原因=v.终止原因;logs(id,"终止项目："+v.终止原因);return}
  if(mode==="remove"){if(page==="项目跟进管理")for(const owner of Object.values(db.notes)){if(owner.项目跟进)owner.项目跟进=owner.项目跟进.filter(n=>n.id!==id)}db[page]=rs.filter(z=>z.id!==id);return}
- if(mode==="new"){rs.unshift({...v,id:uid(),录入人:"演示用户",录入时间:day(),...(page==="资源池"?{是否已入库:"否"}:{})});return}
+ if(mode==="new"){rs.unshift({...v,id:uid(),录入人:actor(),录入时间:day(),...(page==="资源池"?{是否已入库:"否"}:{})});return}
  if(mode==="edit"){Object.assign(r,v);if(page==="项目跟进管理"){for(const owner of Object.values(db.notes)){const n=owner.项目跟进?.find(x=>x.id===r.id);if(n)Object.assign(n,v)}}logs(id,"更新基本信息");return}
  if(mode==="admit"){if(r.是否已入库==="是")throw Error("该企业已入库");r.是否已入库="是";if(!db.企业库.some(e=>e.企业全称===r.企业全称))db.企业库.unshift({...r,id:uid()});db.直投项目管理.unshift({...r,...v,id:uid(),项目状态:"储备项目"});logs(id,"完成本地入库登记");return}
  if(mode==="follow"){const entry={...v,id:uid()},matches=db.直投项目管理.filter(p=>p.企业全称===entry.企业全称);if(matches.length===1){entry.projectId=matches[0].id;const notes=db.notes[entry.projectId]??={};(notes.项目跟进??=[]).unshift({...entry})}db.项目跟进管理.unshift(entry);return}
@@ -102,7 +102,7 @@ function saveForm(v){
 }
 function download(blob,name){const u=URL.createObjectURL(blob),a=document.createElement("a");a.href=u;a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(u),1500)}
 function exportRows(){const schema=reportSource[page]?ledgerColumns(ledgerSchema()):null,cols=schema?["序号",...schema.map(c=>c.key)]:fields[page].split(" ");const cell=s=>{let v=String(s??"");if(/^[=+@-]/.test(v))v="'"+v;return '"'+v.replaceAll('"','""')+'"'};download(new Blob(["\ufeff"+[cols,...visibleRows().map((r,i)=>schema?[i+1,...schema.map(c=>ledgerValue(r,c))]:cols.map(k=>r[k]))].map(row=>row.map(cell).join(",")).join("\r\n")],{type:"text/csv;charset=utf-8"}),page+".csv")}
-function fileStore(mode,job){return new Promise((ok,no)=>{const q=indexedDB.open("equity-reference-documents",1);q.onupgradeneeded=()=>q.result.createObjectStore("files");q.onerror=()=>no(q.error);q.onsuccess=()=>{const dbx=q.result,tx=dbx.transaction("files",mode),req=job(tx.objectStore("files"));tx.oncomplete=()=>{dbx.close();ok(req.result)};tx.onabort=()=>{dbx.close();no(tx.error)}}})}
+function fileStore(mode,job){if(team)return sharedFileStore(job);return new Promise((ok,no)=>{const q=indexedDB.open("equity-reference-documents",1);q.onupgradeneeded=()=>q.result.createObjectStore("files");q.onerror=()=>no(q.error);q.onsuccess=()=>{const dbx=q.result,tx=dbx.transaction("files",mode),req=job(tx.objectStore("files"));tx.oncomplete=()=>{dbx.close();ok(req.result)};tx.onabort=()=>{dbx.close();no(tx.error)}}})}
 document.addEventListener("click",async e=>{
  const el=e.target.closest("[data-a]");if(!el)return;const a=el.dataset.a,v=el.dataset.v,r=db[page]?.find(o=>o.id===v);
  switch(a){
@@ -127,9 +127,9 @@ document.addEventListener("click",async e=>{
  case "addStructure":el.closest("[data-section]").insertAdjacentHTML("beforeend",structureRow(v));return;
  case "dropStructure":el.closest(".structureRow").remove();return;
  case "terminate":formState={mode:"terminate",id:v};modal("终止项目",'<p>'+esc(r.项目名称)+'</p>'+input("终止原因","",null,true),true);return;
- case "submitStage":stageRecord(v);return;
+ case "submitStage":if(team)await transition("submit",v);else stageRecord(v);return;
  case "job":jobDetail(v);return;
- case "approve":case "reject":reviewStage(v,a==="approve");return;
+ case "approve":case "reject":if(team)await transition(a,v);else reviewStage(v,a==="approve");return;
  case "group":opened.has(v)?opened.delete(v):opened.add(v);menu();return;
  case "collapse":document.body.classList.toggle(innerWidth<996?"reveal":"hide");return;
  case "full":if(document.fullscreenElement)await document.exitFullscreen();else await document.documentElement.requestFullscreen();return;
@@ -153,8 +153,8 @@ document.addEventListener("click",async e=>{
  case "detailSub":navigate(page,rid,group,v,proj()?projectDetailMode():"");return;
  case "history":modal("变更记录",table(["操作","填写人","填写时间"],(db.notes[rid]?.变更记录||[]).map(l=>[esc(l.操作),esc(l.填写人),esc(l.填写时间)])));return;
  case "viewRow":{const row=records().find(z=>z.id===v);modal(pageLabel(page),kv(row,["资源池","企业库"].includes(page)?enterpriseFields:(fields[page]||"名称").split(" "))+(["资源池","企业库"].includes(page)?structures(row,false):""));return}
- case "addNote":if(sub==="财务情况"){financeEditor();return}if(sub==="文档资料"){formState={mode:"upload"};modal("上传文件",'<label>附件<input type="file" name="file" required></label>'+input("类别",docFilter.folder||documentCategories([])[0],documentCategories(db.notes[rid]?.文档资料||[]),true),true)}else editor("note",{填写时间:day(),填写人:"演示用户",创建日期:day(),创建人:"演示用户",发起人:"演示用户",记录人员:"演示用户",数据来源:projectDetailMode()==="post"?"投后":"投前",状态:"草稿"});return;
- case "noteInfo":{const n=db.notes[rid][sub].find(x=>x.id===v);modal(sub,kv(n,sub==="财务情况"?["报表类型","报表期间","币种",...financialMetrics]:(subFields[sub]||"事项名称 状态 填写人 填写时间 备注").split(" "))+(n.files||[]).map(f=>btn(f.name,"download",f.id,"link")).join("")+btn("打印","printNow"));return}
+ case "addNote":if(sub==="财务情况"){financeEditor();return}if(sub==="文档资料"){formState={mode:"upload"};modal("上传文件",'<label>附件<input type="file" name="file" required></label>'+input("类别",docFilter.folder||documentCategories([])[0],documentCategories(db.notes[rid]?.文档资料||[]),true),true)}else editor("note",{填写时间:day(),填写人:actor(),创建日期:day(),创建人:actor(),发起人:actor(),记录人员:actor(),数据来源:projectDetailMode()==="post"?"投后":"投前",状态:"草稿"});return;
+ case "noteInfo":{const n=db.notes[rid][sub].find(x=>x.id===v);modal(sub,printNote(n,sub==="财务情况"?["报表类型","报表期间","币种",...financialMetrics]:(subFields[sub]||"事项名称 状态 填写人 填写时间 备注").split(" "))+(n.files||[]).map(f=>btn(f.name,"download",f.id,"link")).join("")+btn("打印","printNow"));return}
  case "editNote":{const n=db.notes[rid][sub].find(x=>x.id===v);if(sub==="财务情况")financeEditor(n);else editor("note",n);return}
  case "removeNote":formState={mode:"removeNote",id:v};modal("删除记录","确认删除这条"+esc(sub)+"记录？",true);return;
  case "download":{const f=await fileStore("readonly",s=>s.get(v));if(f)download(f,f.name);else notice("找不到原文件");return}
@@ -167,13 +167,13 @@ document.addEventListener("submit",async e=>{
  if(f.id==="documentQuery"){docFilter.name=v.文件名称.trim();docFilter.uploader=v.上传人.trim();render();return}
  if(f.id==="dialogForm"&&!formState){$("#modal [data-a=riskSearch]")?.click();return}
  if(f.id==="search"){for(const k of Object.keys(v).filter(k=>k.endsWith("日期开始"))){const end=v[k.slice(0,-2)+"结束"];if(v[k]&&end&&v[k]>end){notice("结束日期须晚于或等于开始日期");return}}query=v.q.trim();filter=v.filter||"";facets=Object.fromEntries(Object.entries(v).filter(([k])=>k.startsWith("facet-")).map(([k,x])=>[k.slice("facet-".length),x.trim()]));number=1;render();return}
- if(f.id==="config"){for(const [k,x] of Object.entries(v))db.settings[k.replace(" · ","")]=x;persist();notice("配置已保存");return}
+ if(f.id==="config"){for(const [k,x] of Object.entries(v))db.settings[k.replace(" · ","")]=x;try{await persist();notice("配置已保存")}catch(err){showFailure(err)}return}
  if(f.id!=="dialogForm"||f.dataset.busy)return;f.dataset.busy="1";
  const backup=JSON.stringify(db),newFiles=[];
  try{if(formState.mode==="financial"){await saveFinancial(f,v,newFiles)}else if(formState.mode==="upload"){
- const file=fd.get("file"),id=uid();await fileStore("readwrite",s=>s.put(file,id));newFiles.push(id);db.notes[rid]??={};(db.notes[rid].文档资料??=[]).unshift({id,文件名称:file.name,类别:v.类别,附件类型:extension(file.name),上传人:"演示用户",上传时间:day()});logs(rid,"上传文档")
- }else {readStructures(f,v);saveForm(v)}persist();$("#modal").close();render();notice("已保存")}
- catch(err){db=JSON.parse(backup);await Promise.allSettled(newFiles.map(id=>fileStore("readwrite",s=>s.delete(id))));notice(err.message||"保存失败")}finally{delete f.dataset.busy}
+ const file=fd.get("file"),id=uid();await fileStore("readwrite",s=>s.put(file,id));newFiles.push(id);db.notes[rid]??={};(db.notes[rid].文档资料??=[]).unshift({id,文件名称:file.name,类别:v.类别,附件类型:extension(file.name),上传人:actor(),上传时间:day()});logs(rid,"上传文档")
+ }else {readStructures(f,v);saveForm(v)}await persist();$("#modal").close();render();notice("已保存")}
+ catch(err){db=team?structuredClone(team.data):JSON.parse(backup);await Promise.allSettled(newFiles.map(id=>fileStore("readwrite",s=>s.delete(id))));showFailure(err)}finally{delete f.dataset.busy}
 });
 document.addEventListener("change",e=>{if(e.target.id==="size"){size=+e.target.value;number=1;render()}if(e.target.id==="jump"){number=Math.trunc(+e.target.value)||1;render()}});
 document.addEventListener("input",e=>{if(e.target.id==="folderSearch")for(const row of document.querySelectorAll(".docTree button"))row.hidden=!row.textContent.includes(e.target.value.trim())});

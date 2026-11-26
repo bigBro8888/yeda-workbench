@@ -7,8 +7,8 @@ const ledgerLayout={
  项目台账报表:[
  ["被投资企业名称"],["基本信息","项目负责人 被投资企业性质 企业目前经营状态"],["注册地","被投资企业注册地 在江苏省内是否有实际经营业务的分/子公司"],["行业分类","项目所属行业门类 项目所属行业大类"],["投资情况","投资主体 投资时间 投资轮次 投资方式 项目所属阶段 投前估值(万元) 投后估值(万元) 初始持股比例 初始投资金额(万元)(A)"],["协议条款","是否有董事会席位 投资角色 该轮共同投资者 其他投资者投资金额 是否有回购条款 初始回购条款内容 条款变更类型 最新回购条款内容 条款触发预警"],["退出情况","退出状态 退出方式 退出金额(B) 分红、补偿等其他回收金额(D)(万元) 回收总金额E=B+D"],["在手情况","项目最新估值(万元) 估值增值% 剩余/稀释后持股比例 剩余在投成本 在投成本对应估值(C) 在投部分增值(万元)"],["收益情况","项目盈亏情况C+E-A MOIC[F=(C+E)/A] DPI[E/A]"],["营业收入（万元）","[当前年份-3]年 [当前年份-2]年 [当前年份-1]年 去年同期 本年累计 同比增长"],["净利润（万元）","[当前年份-3]年 [当前年份-2]年 [当前年份-1]年 同比增长"],["上市情况","是否上市 上市板块 股票代码 上市进展"],["荣誉奖项"],["纳税情况","去年(万元) 区内部分 本年(万元) 区内部分"],["就业情况","去年底就业(人) 区内部分 本年就业(人) 区内部分"],["招投联动","招商项目 落地形态 区内项目 财务投资项目 与我方同轮次的其他方投资额合计 后续融资多少(我方投资之后其他方投资额合计)"]]
 };
-function ledgerSchema() {
- return ledgerLayout[page].map(([label,columns])=>({label,children:columns?.split(" ").map(s=>s.replaceAll("~"," "))||[]}));
+function ledgerSchema(report=page) {
+ return ledgerLayout[report].map(([label,columns])=>({label,children:columns?.split(" ").map(s=>s.replaceAll("~"," "))||[]}));
 }
 function annualFinancials(r,notes){
  const year=new Date().getFullYear(),fin=(notes.财务情况||[]).filter(x=>x.币种==="人民币");
@@ -25,14 +25,15 @@ function annualFinancials(r,notes){
   set(g,previous,last?.[k]);set(g,current,now?.[k]);set(g,"区内部分",last?.[local]);set(g,"区内部分#2",now?.[local]);
  }
 }
-function ledgerRows(){
- return db[reportSource[page]].flatMap(source=>{
+function ledgerRows(report=page){
+ return db[reportSource[report]].flatMap(source=>{
   const notes=db.notes[source.id]||{},projects=notes.已投项目信息||[],subs=notes.已投子基金信息||[];
   const r={...source,sourceId:source.id,类型:source.基金类型,级次:source.基金级别,层级:source.基金级别,基金管理人名称:source.基金管理人,认缴金额:source.基金认缴规模,实缴金额:source.基金实缴规模,基金认缴:source.基金认缴规模,基金实缴:source.基金实缴规模,
    "其中：金控集团认缴":ownAmount(source,"认缴"),"其中：金控集团实缴":ownAmount(source,"实缴"),"投资子基金数量":subs.length,"投资项目概况 / 投资数量(个)":projects.length,"投资项目概况 / 投资金额（万元）":total(projects,"累计已投金额（万元）"),"累计投资情况（含参投子基金及直投项目） / 投资数量(个)":projects.length+subs.length,
    累计向出资人分配金额:total(notes.基金分配||[],"本期分配总金额（万元）"),被投资企业名称:source.企业全称,项目负责人:source.项目经理,投资主体:source.出资主体,投资时间:source.首次出资日期,项目所属阶段:source.项目状态,"投前估值(万元)":source.投前估值,"投后估值(万元)":source.投后估值,"初始投资金额(万元)(A)":source.初始投资金额};
-  if(page==="项目台账报表"){annualFinancials(r,notes);r["项目最新估值(万元)"]=[...(notes.项目估值||[])].sort((a,b)=>String(b.估值基准日).localeCompare(String(a.估值基准日)))[0]?.["最新整体估值（万元）"];r["回收总金额E=B+D"]=total(notes.项目回收款||[],"金额(万元)")}
-  if(page==="参股基金台账报表"&&(projects.length||subs.length))return [...projects.map(p=>[p,"项目"]),...subs.map(f=>[f,"子基金"])].map(([child,type],i)=>({...r,id:child.id,"项目/子基金":type,项目序号:i+1,被投资企业名称:child.项目名称||child.基金名称, "收益情况#2 / MOIC":child.MOIC,"收益情况#2 / DPI":child.DPI,首次投资时间:child.首次出资日期,本基金累计投资金额:child["累计已投金额（万元）"],退出金额:child["累计已退出金额（万元）"],"最新估值（万元）":child["最新估值（万元）"]}));
+  if(report==="项目台账报表"){annualFinancials(r,notes);r["项目最新估值(万元)"]=[...(notes.项目估值||[])].sort((a,b)=>String(b.估值基准日).localeCompare(String(a.估值基准日)))[0]?.["最新整体估值（万元）"];r["回收总金额E=B+D"]=total(notes.项目回收款||[],"金额(万元)")}
+  finalLedgerRow(r,report,source,notes);
+  if(report==="参股基金台账报表"&&(projects.length||subs.length))return [...projects.map(p=>[p,"项目"]),...subs.map(f=>[f,"子基金"])].map(([child,type],i)=>({...r,id:child.id,"项目/子基金":type,项目序号:i+1,被投资企业名称:child.项目名称||child.基金名称, "收益情况#2 / MOIC":child.MOIC,"收益情况#2 / DPI":child.DPI,首次投资时间:child.首次出资日期,本基金累计投资金额:child["累计已投金额（万元）"],退出金额:child["累计已退出金额（万元）"],"最新估值（万元）":child["最新估值（万元）"]}));
   return [r];
  });
 }
@@ -44,10 +45,11 @@ function ledgerColumns(schema){
   return (children.length?children:[label]).map(child=>{const n=(seen.get(child)||0)+1;seen.set(child,n);const key=children.length?prefix+" / "+child+(n>1?"#"+n:""):label;return {key,label:child,group:label}});
  });
 }
-function ledgerValue(row,col){return Object.hasOwn(row,col.key)?row[col.key]:row[col.label]}
+function rawLedgerValue(row,col){return Object.hasOwn(row,col.key)?row[col.key]:row[col.label]}
+function ledgerValue(row,col,report=page){const value=rawLedgerValue(row,col);return value==null||value===""?rowSupplement(report,row)?.values?.[col.key]:value}
 function ledgerPage(){
  const rows=visibleRows(),schema=ledgerSchema(),cols=ledgerColumns(schema);number=Math.min(number,Math.max(1,Math.ceil(rows.length/size)));
  const head='<tr><th rowspan="2">序号</th>'+schema.map(g=>'<th '+(g.children.length?'colspan="'+g.children.length+'"':'rowspan="2"')+'>'+esc(g.label)+'</th>').join("")+'</tr><tr>'+schema.flatMap(g=>g.children.map(k=>'<th>'+esc(k)+'</th>')).join("")+'</tr>';
  const start=(number-1)*size;
- return toolbar()+panel('<div class="tablewrap ledger"><table><thead>'+head+'</thead><tbody>'+rows.slice(start,start+size).map((r,i)=>'<tr><td>'+(start+i+1)+'</td>'+cols.map((c,j)=>'<td>'+(j===0?btn(first(ledgerValue(r,c)),"ledgerSource",r.sourceId,"link"):esc(first(ledgerValue(r,c))))+'</td>').join("")+'</tr>').join("")+'</tbody></table>'+(!rows.length?'<div class="empty">暂无数据</div>':'')+'</div>'+pager(rows.length));
+ return toolbar()+panel('<div class="tablewrap ledger"><table><thead>'+head+'</thead><tbody>'+rows.slice(start,start+size).map((r,i)=>'<tr><td>'+(start+i+1)+'</td>'+cols.map((c,j)=>'<td>'+(j===0?btn(first(ledgerValue(r,c)),"ledgerSource",r.sourceId,"link")+btn("底稿","supplement",r.id,"link"):esc(first(ledgerValue(r,c))))+'</td>').join("")+'</tr>').join("")+'</tbody></table>'+(!rows.length?'<div class="empty">暂无数据</div>':'')+'</div>'+pager(rows.length));
 }

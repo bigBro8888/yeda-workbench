@@ -147,3 +147,43 @@ dialog::backdrop { background: #10264366; }
 .analysisBlank button + button { margin-left:8px; }
 @media(max-width:1100px) { .analysisSummary {grid-template-columns:1fr} .analysisSummary > div:first-child {padding:15px 18px} }
 @media(max-width:720px) { .analysisColumns {grid-template-columns:1fr} .statementKpis {grid-template-columns:1fr 1fr} .statementKpis > div:nth-child(3) {border:0} .analysisControls > div {margin-left:0} .analysisControls label {max-width:100%} }
+/* In-page research conversations */
+.investChat { display:grid; grid-template-columns:216px minmax(0,1fr); max-width:1540px; margin:auto; height:100%; min-height:380px; border:1px solid var(--line); border-radius:13px; overflow:hidden; background:white; }
+.chatHistory { display:flex; flex-direction:column; align-items:stretch; gap:12px; padding:20px 14px; min-height:0; color:var(--ink); background:#f3f7fc; border-right:1px solid var(--line); }
+.chatHistory h2,.chatHistory h3 { margin:0; font-size:14px; }
+.chatHistory h3 { margin-top:8px; color:var(--muted); font-size:12px; }
+.chatHistory label { display:grid; gap:6px; font-size:12px; color:var(--muted); }
+.chatHistory select { width:100%; min-width:0; border:1px solid #c8d7e9; padding:7px; border-radius:6px; color:var(--ink); background:white; }
+.chatHistoryList { min-height:0; overflow:auto; }
+.chatHistoryList button { display:block; width:100%; background:transparent; border:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; text-align:left; font-size:13px; padding:9px; }
+.chatHistoryList button.selected { background:#dfeafa; color:#154c94; font-weight:600; }
+.chatMain { display:grid; grid-template-rows:auto minmax(0,1fr) auto; min-width:0; min-height:0; }
+.chatHeader { padding:16px 24px; display:flex; align-items:center; justify-content:space-between; gap:8px; border-bottom:1px solid var(--line); }
+.chatStream { overflow:auto; padding:20px clamp(14px,3%,44px); scrollbar-gutter:stable; }
+.chatWelcome { max-width:650px; margin:clamp(12px,8vh,84px) auto 18px; }
+.chatMark { display:inline-grid; place-items:center; width:42px; height:42px; border-radius:12px; color:white; font-size:21px; background:#214f89; }
+.chatWelcome h1 { margin:15px 0 8px; font-size:clamp(23px,2vw,32px); }
+.chatWelcome p { margin:0 0 18px; color:var(--muted); }
+.chatExamples { display:grid; gap:6px; }
+.chatExamples button { text-align:left; color:#235389; background:#f7faff; border-color:var(--line); padding:11px 14px; }
+.chatExamples button:after { content:"↗"; float:right; }
+.chatStream .agentTurn { max-width:820px; margin:0 auto 22px; padding:0; overflow:visible; }
+.chatQuestion { margin:0 0 16px auto; width:fit-content; max-width:92%; white-space:pre-wrap; overflow-wrap:anywhere; border-radius:12px 12px 3px 12px; padding:10px 14px; background:#e8f1ff; }
+.agentSignature { color:#305c8c; font-size:12px; font-weight:650; }
+.agentTurn pre { margin:7px 0; }
+.sourceChips { display:flex; gap:6px; flex-wrap:wrap; }
+.sourceChips button { color:#24568b; background:#f6f9fc; max-width:100%; text-align:left; font-size:12px; overflow-wrap:anywhere; }
+#chatComposer { margin:8px auto 16px; width:calc(100% - 36px); max-width:850px; border:1px solid #b9cee7; border-radius:12px; padding:10px 12px; }
+#chatComposer:focus-within { border-color:#487ab9; box-shadow:0 0 0 2px #ebf2fa; }
+#chatComposer textarea { width:100%; border:0; resize:vertical; max-height:140px; min-height:42px; outline:0; }
+#chatComposer div { display:flex; align-items:center; justify-content:space-between; gap:6px; }
+@media(max-width:740px) {
+ .investChat {grid-template-columns:minmax(0,1fr);grid-template-rows:auto minmax(0,1fr);min-height:470px}
+ .chatHistory {display:grid;grid-template-columns:auto minmax(0,1fr);align-items:end;padding:8px;gap:5px;border-right:0;border-bottom:1px solid var(--line)}
+ .chatHistory h2,.chatHistory h3 {display:none}
+ .chatHistoryList {grid-column:1/-1;display:flex;overflow:auto}
+ .chatHistoryList button {width:auto;max-width:190px;flex-shrink:0}
+ .chatHeader {padding:10px 14px}
+ .chatWelcome {margin:4px auto}
+ #chatComposer {margin:4px auto 8px;width:calc(100% - 16px)}
+}

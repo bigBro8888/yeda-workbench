@@ -119,7 +119,7 @@ document.addEventListener("click",async e=>{
  try{
   if(a==="identity"){if(team)teamHub();else modal("浏览器演示",'<p>业务数据保存在当前浏览器。团队版支持独立账号、共享附件与跨人审批。</p>');return}
   if(a==="syncTeam"){await refreshTeam();$("#modal").close();notice("数据已同步")}
-  if(a==="logoutTeam"){await teamRequest("logout",{});sessionStorage.removeItem("team.dialogs."+actor());location.reload()}
+  if(a==="logoutTeam"){await teamRequest("logout",{});sessionStorage.removeItem("team.dialogs."+actor());sessionStorage.removeItem("equity.agent."+actor());location.reload()}
   if(a==="members")await members();
   if(a==="createMember"){const f=el.form;await teamRequest("accounts",{name:f.elements.用户名.value,password:f.elements.密码.value,role:f.elements.成员角色.value});await members()}
   if(a==="auditTeam"){const logs=await teamRequest("audit");modal("操作记录",table(["时间","操作人","操作","业务对象"],logs.map(x=>[x.at,x.actor,x.event,x.subject].map(esc))))}

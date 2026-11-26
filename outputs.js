@@ -1,12 +1,5 @@
 "use strict";
 let outputReport="项目台账报表",selectedTemplate="";
-function portfolioContext(question){
- const projects=db.直投项目管理.filter(r=>[r.项目名称,r.企业全称,r.企业简称].some(n=>n&&question.includes(n)));
- return projects.slice(0,5).map(p=>proposalText(p)).join("\n").slice(0,40000);
-}
-function assistantHome(){
- return panel(title("易投 AI")+'<div class="agentChoices">'+[["智能问数","查询基金、项目与财务指标"],["文档识别","提取报表或扫描件文字"],["合同校验","比对签回件与 Word 原稿"],["投资建议书","按项目档案编制底稿"]].map(([n,label])=>btn(n+" · "+label,"nav",n)).join("")+'</div>');
-}
 function proposalText(p){
  const n=db.notes[p.id]||{},financial=[...(n.财务情况||[])].sort((a,b)=>String(b.年度).localeCompare(String(a.年度))||String(b.填写时间).localeCompare(String(a.填写时间)));
  const list=(rows,fmt)=>rows.length?rows.map(fmt).join("\n"):"暂无记录";

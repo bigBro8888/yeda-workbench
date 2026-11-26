@@ -8,7 +8,7 @@ function notice(t){$("#toast").textContent=t;clearTimeout(notice.timer);notice.t
 let detailMode="",projectView="卡片视图";
 function projectDetailMode(){return detailMode||((group!=="文档资料"&&group in projectPostGroups)?"post":"pre")}
 function navigate(n,id="",g="",s="",mode=""){const h="#"+[n,id,g,s,...(mode?[mode]:[])].map(encodeURIComponent).join("/");if(h===location.hash)route();else location.hash=h}
-function route(){const values=location.hash.slice(1).split("/").map(decodeURIComponent);[page,rid="",group="",sub="",detailMode=""]=values;if(!Object.hasOwn(db,page)||!Array.isArray(db[page]))page="首页";if(!tabs.includes(page))tabs.push(page);for(const [n,,...kids] of groups)if(kids.includes(page))opened.add(n);query=filter="";docFilter={folder:"",name:"",uploader:""};if(proj()&&group==="投后管理"&&sub==="现金流"){group="权益管理";sub="资金流水";detailMode="post"}if(proj()&&group==="投后管理"&&sub==="退出计划"){group="投资退出";detailMode="post"}facets={};chosenCategory="";advanced=false;number=1;size=fund()?5:10;document.body.classList.remove("reveal");render();$("#view").scrollTop=0}
+function route(){const values=location.hash.slice(1).split("/").map(decodeURIComponent);[page,rid="",group="",sub="",detailMode=""]=values;if(page!=="财报总览"&&(!Object.hasOwn(db,page)||!Array.isArray(db[page])))page="首页";if(!tabs.includes(page))tabs.push(page);for(const [n,,...kids] of groups)if(kids.includes(page))opened.add(n);query=filter="";docFilter={folder:"",name:"",uploader:""};if(proj()&&group==="投后管理"&&sub==="现金流"){group="权益管理";sub="资金流水";detailMode="post"}if(proj()&&group==="投后管理"&&sub==="退出计划"){group="投资退出";detailMode="post"}facets={};chosenCategory="";advanced=false;number=1;size=fund()?5:10;document.body.classList.remove("reveal");render();$("#view").scrollTop=0}
 function menu(){const nav=$("#menu"),pos=nav.scrollTop;nav.innerHTML=groups.map(([n,ic,...kids])=>'<button data-a="'+(kids.length?"group":"nav")+'" data-v="'+n+'" class="'+(page===n?"on":"")+'"><i>'+ic+'</i>'+n+(kids.length?'<em>'+(opened.has(n)?"⌃":"⌄")+'</em>':"")+'</button>'+(opened.has(n)?kids.map(c=>btn(pageLabel(c),"nav",c,"child "+(page===c?"on":""))).join(""):"")).join("");nav.scrollTop=pos;$("#tabs").innerHTML=tabs.map(n=>'<span class="'+(n===page?"on":"")+'">'+btn(pageLabel(n),"nav",n)+btn("×","closeTab",n)+'</span>').join("")}
 function table(cols,rows){return '<div class="tablewrap"><table><thead><tr>'+cols.map(c=>'<th>'+esc(c)+'</th>').join("")+'</tr></thead><tbody>'+rows.map(cells=>'<tr>'+cells.map(v=>'<td>'+v+'</td>').join("")+'</tr>').join("")+'</tbody></table>'+(!rows.length?'<div class="empty">暂无数据</div>':"")+'</div>'}
 let overviewScope="投前";
@@ -38,7 +38,7 @@ function overview(){
   stages.map(s=>'<div class="overviewCaption"><h2>'+s+'概况</h2><small>金额单位 · 万元</small></div>'+overviewCards(s==="投后")).join(""),"overview");
 }
 function dashboard(){
- const shortcuts=groups.filter(([n])=>!["上市公司","AI 能力"].includes(n)).map(([n,ic,...kids])=>
+ const shortcuts=groups.filter(([n])=>n!=="AI 能力").map(([n,ic,...kids])=>
   '<button type="button" class="shortcut" data-a="nav" data-v="'+(kids[0]||n)+'"><b class="badge" aria-hidden="true">'+ic+'</b>'+n+'<span aria-hidden="true">›</span></button>').join("");
  return overview()+panel(title("功能入口")+'<div class="shortcuts">'+shortcuts+'</div>',"dash")+panel(homeHeading("风险信息","riskReset")+riskTable(risks().slice(0,5)))+panel(homeHeading("日常工作","allWork")+'<div class="pills">'+["我的待办","我的申请","我的已办","我的知会","我的消息"].map(v=>btn(v,"worktab",v,work===v?"active":"")).join("")+'</div>'+table(["任务主题","提交人","当前节点","到达时间"],riskWork().slice(0,5)))+panel(homeHeading("项目跟进","allFollow")+table(["企业名称","事项名称","跟进日期"],db.项目跟进管理.slice(0,5).map(r=>[esc(r.企业全称),btn(r.事项名称,"followDetail",r.id,"link"),esc(r.跟进日期)])));
 }
@@ -88,7 +88,7 @@ function detailPage(r){const tree=currentGroups();if(!Object.hasOwn(tree,group))
 }
 function settings(){const cfg=page==="基础管理设置"?["不开启流程时默认提交状态","开启审批流程","支持历史数据导入","投后自动定期推送"]:["基金类型","投资流程环节","投资流程必要环节","投后管理功能","必要环节校验"];return panel(title(pageLabel(page))+'<form id="config">'+["自管基金","参股基金","直投项目"].map(n=>'<h3>'+n+'</h3><div class="fields">'+cfg.map(k=>input(n+" · "+k,db.settings[n+k],k.includes("状态")?["草稿","审批通过"]:page==="基础管理设置"?["是","否"]:null)).join("")+'</div><br>').join("")+'<button class="primary">保存配置</button></form>')}
 function externalPage(){const local={"报表配置":templateView,"支付现金流":paymentsView,"投资建议书":proposalView,"易投AI":assistantHome,"行业配置":industryConfig,"行业报告":industryReports,"智能问数":askView,"合同校验":contractScreen,"文档识别":recognitionScreen};if(local[page])return local[page]();return panel(title(page)+'<div class="empty">'+(page==="支付现金流"?"原系统此入口返回“该页面无法访问”。":page==="报表配置"?"原系统的报表配置服务返回 502，当前尚未接入报表设计器。":"此功能使用独立服务，当前本地版尚未接入。")+'</div>'+btn("返回首页","nav","首页"))}
-function render(){document.title=pageLabel(page)+" - 股权管理系统";menu();$("#view").innerHTML=page==="首页"?dashboard():page==="驾驶舱"?cockpit():page==="支付现金流"||groups.at(-1).slice(2).includes(page)?externalPage():["基础管理设置","业务流程设置"].includes(page)?settings():record()&&(fund()||proj())?detailPage(record()) :["文件分类配置","标签管理","行业图谱"].includes(page)?categories():page==="管理平台"?platformCards():reportSource[page]?ledgerPage():listPage();teamControls()}
+function render(){document.title=pageLabel(page)+" - 股权管理系统";menu();$("#view").innerHTML=page==="财报总览"?statementAnalysis():page==="首页"?dashboard():page==="驾驶舱"?cockpit():page==="支付现金流"||groups.at(-1).slice(2).includes(page)?externalPage():["基础管理设置","业务流程设置"].includes(page)?settings():record()&&(fund()||proj())?detailPage(record()) :["文件分类配置","标签管理","行业图谱"].includes(page)?categories():page==="管理平台"?platformCards():reportSource[page]?ledgerPage():listPage();teamControls()}
 function input(k,v,choices,required=false){
  const opts=choices||options[k]||(/^是否/.test(k)?["是","否"]:null),name=' name="'+esc(k)+'" '+(required?"required":"");
  let control;
@@ -156,7 +156,7 @@ document.addEventListener("click",async e=>{
  case "submitStage":if(team)await transition("submit",v);else stageRecord(v);return;
  case "job":jobDetail(v);return;
  case "approve":case "reject":if(team)await transition(a,v);else reviewStage(v,a==="approve");return;
- case "group":opened.has(v)?opened.delete(v):opened.add(v);menu();return;
+ case "group":if(v==="财报分析"&&page!=="财报总览"){navigate("财报总览");return}opened.has(v)?opened.delete(v):opened.add(v);menu();return;
  case "collapse":document.body.classList.toggle(innerWidth<996?"reveal":"hide");return;
  case "full":if(document.fullscreenElement)await document.exitFullscreen();else await document.documentElement.requestFullscreen();return;
  case "nav":post=false;navigate(v);return;
@@ -199,7 +199,7 @@ document.addEventListener("submit",async e=>{
  if(f.id==="config"){for(const [k,x] of Object.entries(v))db.settings[k.replace(" · ","")]=x;try{await persist();notice("配置已保存")}catch(err){showFailure(err)}return}
  if(f.id!=="dialogForm"||f.dataset.busy)return;f.dataset.busy="1";
  const backup=JSON.stringify(db),newFiles=[];
- try{if(formState.mode==="financial"){await saveFinancial(f,v,newFiles)}else if(formState.mode==="upload"){
+ try{if(formState.mode==="financial"){const saved=await saveFinancial(f,v,newFiles);if(page==="财报总览")analysisSelection.report=saved.id}else if(formState.mode==="upload"){
  const file=fd.get("file"),id=uid();await fileStore("readwrite",s=>s.put(file,id));newFiles.push(id);db.notes[rid]??={};(db.notes[rid].文档资料??=[]).unshift({id,文件名称:file.name,类别:v.类别,附件类型:extension(file.name),上传人:actor(),上传时间:day()});logs(rid,"上传文档")
  }else {readStructures(f,v);saveForm(v)}await persist();$("#modal").close();render();notice("已保存")}
  catch(err){db=team?structuredClone(team.data):JSON.parse(backup);await Promise.allSettled(newFiles.map(id=>fileStore("readwrite",s=>s.delete(id))));showFailure(err)}finally{delete f.dataset.busy}

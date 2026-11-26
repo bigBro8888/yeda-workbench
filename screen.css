@@ -110,3 +110,40 @@ dialog::backdrop { background: #10264366; }
   .shortcut { padding: 9px 7px; gap: 6px; }
 }
 @media (prefers-reduced-motion:reduce) { button:not(:disabled) { transition: none; } }
+.analysisBar,.analysisControls { display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:12px; }
+.analysisBar h1,.analysisBar h2 { margin:0; }
+.analysisBar h1 { font-size:25px; }
+.analysisControls { justify-content:flex-start; align-items:flex-end; margin-top:18px; padding-top:14px; border-top:1px solid var(--line); }
+.analysisControls label,.analysisTrend label { display:grid; gap:5px; color:var(--muted); font-size:12px; min-width:0; }
+.analysisControls select,.analysisTrend select { color:var(--ink); max-width:100%; min-height:34px; padding:5px 26px 5px 9px; border:1px solid #c7d7e8; border-radius:6px; background:white; font:inherit; font-size:14px; }
+.analysisControls > div { margin-left:auto; display:flex; gap:8px; }
+.analysisSummary,.analysisColumns { max-width:1760px; margin:0 auto 14px; }
+.analysisSummary { display:grid; grid-template-columns:minmax(180px,1fr) minmax(0,2.7fr); overflow:hidden; border:1px solid var(--line); border-radius:12px; background:#fff; }
+.analysisSummary > div:first-child { padding:18px 22px; color:white; background:#183e70; }
+.analysisSummary h2 { margin:8px 0; font-size:21px; }
+.analysisSummary p,.analysisSummary > div > span { margin:5px 0 0; font-size:12px; color:#dbeaff; }
+.statementKpis { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); align-items:center; padding:12px 4px; }
+.statementKpis > div { min-width:0; border-left:1px solid var(--line); padding:8px clamp(8px,1.1vw,24px); }
+.statementKpis > div:first-child { border-left:0; }
+.statementKpis span,.statementKpis small { color:var(--muted); }
+.statementKpis strong { display:block; margin:6px 0; font:650 clamp(20px,2vw,34px)/1.25 "Segoe UI",sans-serif; overflow-wrap:anywhere; }
+.analysisColumns { display:grid; grid-template-columns:minmax(0,1.35fr) minmax(0,1fr); gap:14px; }
+.analysisColumns .panel { margin:0; min-width:0; }
+.analysisTrend .analysisBar label { grid-auto-flow:column; align-items:center; }
+.analysisNote { font-size:12px; color:var(--muted); }
+.trendRow { display:grid; grid-template-columns:48px 1fr 70px; align-items:center; gap:10px; padding:7px 0; }
+.trendRow b { text-align:right; }
+.trendTrack { position:relative; height:16px; background:#f0f5fa; border-radius:3px; }
+.trendTrack:before { content:""; position:absolute; left:50%; top:-2px; height:20px; border-left:1px solid #8c9fb9; }
+.trendTrack i { position:absolute; height:8px; top:4px; border-radius:2px; background:#3777ca; }
+.observationList { margin:0; }
+.observationList div { padding:9px 0; border-top:1px solid var(--line); }
+.observationList dt { font-weight:650; color:#234e83; }
+.observationList dd { margin:4px 0 0; color:var(--muted); line-height:1.55; }
+.analysisBar + .tablewrap { margin-top:14px; }
+.analysisSource { padding:12px 15px; border-left:3px solid #88acdc; background:#f3f7fc; margin-bottom:12px; }
+.analysisSource div { margin-top:7px; }
+.analysisBlank { padding:22px 0; }
+.analysisBlank button + button { margin-left:8px; }
+@media(max-width:1100px) { .analysisSummary {grid-template-columns:1fr} .analysisSummary > div:first-child {padding:15px 18px} }
+@media(max-width:720px) { .analysisColumns {grid-template-columns:1fr} .statementKpis {grid-template-columns:1fr 1fr} .statementKpis > div:nth-child(3) {border:0} .analysisControls > div {margin-left:0} .analysisControls label {max-width:100%} }

@@ -6,9 +6,9 @@ const periodOptions={月度报表:Array.from({length:12},(_,i)=>String(i+1).padS
 function reportPeriodOptions(type,current){
  return periodOptions[type].map(x=>'<option '+(x===current?"selected":"")+'>'+x+'</option>').join("");
 }
-function financeEditor(row={}) {
+function financeEditor(row={},owner=rid) {
  const type=row.报表类型||"月度报表",yr=row.年度||new Date().getFullYear();
- formState={mode:"financial",id:row.id||""};
+ formState={mode:"financial",id:row.id||"",owner};
  const metrics=financialMetrics.map(k=>{
   const unit=k.endsWith("率")?"%":k.endsWith("人数")?"人":"万元";
   return '<label>'+k+'（'+unit+'）<input type="number" step="'+(unit==="人"?"1":"any")+'" name="'+k+'" value="'+esc(row[k])+'" '+(calculatedMetrics.includes(k)?"readonly":"")+'></label>';
@@ -24,7 +24,8 @@ function recalcFinance(form) {
  calc("所有者权益","总资产","总负债",false);calc("资产负债率","总负债","总资产",true);calc("流动比率","流动资产","流动负债",true);
 }
 async function saveFinancial(form,values,newFiles) {
- const items=(db.notes[rid]??={}).财务情况??=[];
+ const owner=formState.owner;
+ const items=(db.notes[owner]??={}).财务情况??=[];
  const existing=items.find(r=>r.id===formState.id);
  if(items.some(r=>r.id!==existing?.id&&["报表类型","年度","期间"].every(k=>r[k]===values[k])))throw Error("该期间已有报表，请编辑原记录");
  const files=Array.from(form.elements.files.files);
@@ -33,8 +34,9 @@ async function saveFinancial(form,values,newFiles) {
  for(const f of files){const id=uid();await fileStore("readwrite",s=>s.put(f,id));newFiles.push(id);attachments.push({id,name:f.name})}
  delete values.files;delete values.extractFiles;
  Object.assign(values,{files:attachments,报表期间:values.年度+"年 "+values.期间,填写人:actor(),填写时间:day()});
- if(existing)Object.assign(existing,values);else items.unshift({...values,id:uid()});
- logs(rid,"更新财务情况");
+ const saved=existing||{id:uid()};Object.assign(saved,values);
+ if(!existing)items.unshift(saved);
+ logs(owner,"更新财务情况");return saved;
 }
 document.addEventListener("change",e=>{
  const form=e.target.form;
